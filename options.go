@@ -13,6 +13,11 @@ type Options struct {
 	// to X.0.0 / X.Y.0 for comparison.
 	ReleaseOnly bool
 
+	// Deduplicate merges aliases of the same semantic version
+	// (MAJOR.MINOR.PATCH + PRERELEASE; build is ignored) after parsing
+	// and before Depth* aggregation. Preserves the order of first appearance.
+	Deduplicate bool
+
 	// OutputCanonical when true returns canonical version string (vMAJOR.MINOR.PATCH[-PRERELEASE]),
 	// build metadata stripped), otherwise returns the original input tag.
 	OutputCanonical bool

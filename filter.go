@@ -51,6 +51,10 @@ func Filter(in []string, opt Options) []string {
 		vers = clipRange(vers, opt.Range)
 	}
 
+	if opt.Deduplicate || opt.OutputCanonical {
+		vers = deduplicateSemver(vers)
+	}
+
 	// Depth aggregation.
 	switch opt.Depth {
 	case DepthMinor:
@@ -218,4 +222,26 @@ func projectOut(in []semver.Semver, canonical bool) []string {
 	}
 
 	return out
+}
+
+// deduplicateSemver use as final deduplication after all filters
+func deduplicateSemver(vs []semver.Semver) []semver.Semver {
+	type key struct {
+		maj, min, pat int
+		pre           string
+	}
+	seen := make(map[key]struct{}, len(vs))
+	keep := vs[:0]
+
+	for _, v := range vs {
+		k := key{v.Major, v.Minor, v.Patch, v.Prerelease}
+		if _, ok := seen[k]; ok {
+			continue
+		}
+
+		seen[k] = struct{}{}
+		keep = append(keep, v)
+	}
+
+	return keep
 }
