@@ -9,28 +9,39 @@ Input is just a `[]string` of tags; output is a filtered and sorted list.
 
 ## Key features
 
-* SemVer gating: optionally allow only valid `X.Y.Z[-pre][+build]`.
-* ReleaseOnly mode: excludes prerelease and build; understands shorthands
-  `X` and `X.Y` (normalizes to `X.0.0` and `X.Y.0`).
-* Release forms: mask `X` / `X.Y` / `X.Y.Z` (`FormatX` | `FormatXY` |
-  `FormatXYZ` | `FormatAll`).
-* Depth: `Patch` (everything), `Minor` (latest per major/minor pair),
-  `Major` (latest per major), `Latest` (single top-most).
-* Sorting: SemVer-first (`Asc`/`Desc`); in ReleaseOnly it normalizes
-  shorthands; if a non-SemVer tag appears, falls back to lexicographic.
-* Signatures: can drop `sha256-<64>.sig` (handy with raw registry tag sets).
-* Output: Original or Canonical (`vMAJOR.MINOR.PATCH[-PRERELEASE]`, build
-  metadata removed).
-* Range clipping: min/max SemVer bounds, shorthand bounds (`1`, `1.2`,
-  `1.2.3`), inclusive/exclusive ends, `IncludePrerelease` (≥ `X.Y.0-0`).
-* Regex filters: `Include` / `Exclude` run on raw tags before parsing (e.g.,
-  cut out `-alpine`, `-rc`, platform suffixes).
-* Deterministic ordering: when SemVer precedence ties, order is stabilized
-  by the original input string.
-* Allocation-aware: with `OutputCanonical=false`, parsing avoids
-  constructing the canonical string.
-* Aggregation order: for `DepthMinor`/`DepthMajor`, results are emitted in
-  global SemVer order (newest → oldest), not grouped arbitrarily.
+* **SemVer gating** – optionally allow only valid `X.Y.Z[-pre][+build]`.
+* **ReleaseOnly mode** – excludes prerelease/build; accepts shorthands `X` /
+  `X.Y` (compares as `X.0.0` / `X.Y.0`).
+* **VPrefix policy** – require, forbid, or allow the leading `v` (`PrefixV`
+  / `PrefixNone` / `PrefixAny`).
+* **Release forms mask** – permit exactly `X`, `X.Y`, `X.Y.Z`, or any combo
+  (`FormatX` | `FormatXY` | `FormatXYZ` | `FormatAll`).
+* **Depth aggregation** – `Patch` (all), `Minor` (latest per major/minor),
+  `Major` (latest per major), `Latest` (single best).
+* **Range clipping** – min/max bounds using shorthand (`1`, `1.2`, `1.2.3`)
+  or full semver; inclusive/exclusive ends; optional prerelease-at-floor
+  (`>= X.Y.0-0`).
+* **Regex filters** – `Include`/`Exclude` applied to raw tags before parsing
+  (e.g., drop `-alpine`, `-rc`, platform suffixes).
+* **Deduplicate** – merges aliases of the same version (MAJOR.MINOR.PATCH +
+  PRERELEASE; build ignored). Useful with `DepthPatch` or `OutputCanonical`.
+* **Sorting** – SemVer-first (`Asc`/`Desc`), with shorthand normalization in
+  ReleaseOnly; falls back to lexicographic if a tag isn’t SemVer.
+* **Output modes** – original tag or canonical
+  `vMAJOR.MINOR.PATCH[-PRERELEASE]` (build stripped). With
+  `OutputCanonical=false`, parsing avoids building canon strings to reduce
+  allocations.
+* **Deterministic order** – semver ties are stabilized by the original input
+  string.
+* **Signature filtering** – drop `sha256-<64 hex>.sig` noise from
+  registries.
+* **Helpers** – convenient shortcuts:
+  * `DefaultOptions()` (sensible defaults: `SemVer + ReleaseOnly`,
+    `FormatAll`, `DepthMinor`, `SortDesc`, `Deduplicate`),
+  * `Releases(in)`,
+  * `ReleasesCanonical(in)`,
+  * `Latest(in)`,
+  * `LatestPerMajor(in)`.
 
 ## Integration
 
@@ -50,39 +61,22 @@ Basic example of use
 
 ```go
 raw := []string{
-  "v1.2.2",
-  "v1.2.3",
-  "1.2.4",
-  "1.2",
-  "1",
-  "1.3.0-alpha.1",
-  "sha256-xxx.sig",
-  "v2.0.0+build.1",
+  "3.0",
   "2.0",
-  "v2",
-  "someval",
-  "001.100.01",
-  "1.2.3.4.5",
+  "2.0.3",
+  "2.0.2",
+  "1.3.0-rc1",
+  "1.3.0001",
+  "1.3.0",
+  "1.2.4-beta.1",
+  "1.2.3",
+  "1.2.2",
+  "1.2.1",
   "1.1.2",
+  "1.0.2",
 }
 
-exclude, _ := regexp.Compile(`4$`)
-
-res := rats.Select(raw, rats.Options{
-  // FilterSemver is implied by ReleaseOnly; setting true is explicit but optional here.
-  FilterSemver:      true,            // (optional here) enable SemVer gating
-  ReleaseOnly:       true,            // only releases; allow X / X.Y / X.Y.Z
-  OutputCanonical:   true,            // output in canonical format vX.Y.Z
-  ExcludeSignatures: true,            // drop sha256-<64 hex>.sig tags early
-  Include:           nil,             // positive regexp match
-  Exclude:           exclude,         // negative regexp match
-  Format:            rats.FormatAll,  // permit X, X.Y, X.Y.Z
-  Depth:             rats.DepthMinor, // latest per (major,minor)
-  Sort:              rats.SortDesc,   // descending
-  // Range:          (optional) clip by min/max bounds
-})
-
-fmt.Println(res) // [v2.0.0 v1.2.3 v1.1.2 v1.0.0]
+fmt.Println(rats.Releases(raw)) // [3.0 2.0.3 1.3.0 1.2.3 1.1.2 1.0.2]
 ```
 
 ### Range clipping
