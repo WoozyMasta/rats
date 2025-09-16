@@ -22,6 +22,10 @@ type Options struct {
 	// build metadata stripped), otherwise returns the original input tag.
 	OutputCanonical bool
 
+	// StrictSemver additional (redundant) check with full SemVer regular expression
+	// (including optional "v" parameter).
+	StrictSemver bool
+
 	// ExcludeSignatures drops signature-like tags: sha256-<64 hex>.sig
 	ExcludeSignatures bool
 

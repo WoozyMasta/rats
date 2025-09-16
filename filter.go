@@ -109,6 +109,10 @@ func prefilterTag(t string, opt Options) bool {
 		}
 	}
 
+	if opt.StrictSemver && !strictSemver.MatchString(t) {
+		return false
+	}
+
 	if opt.ExcludeSignatures && sigRe.MatchString(t) {
 		return false
 	}
