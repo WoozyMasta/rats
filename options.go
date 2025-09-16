@@ -41,6 +41,11 @@ type Options struct {
 	// Sort defines final output ordering (none/asc/desc).
 	Sort SortMode
 
+	// VPrefix controls whether tags must, may, or must not start with a leading 'v'.
+	// This only affects input acceptance. If OutputCanonical=true, the canonical
+	// string will use the "vMAJOR.MINOR.PATCH[...]" form per SemVer rules.
+	VPrefix VPrefix
+
 	// Range clipping. Applied after parsing and before aggregation.
 	Range Range
 }
@@ -246,6 +251,55 @@ func ParseSort(s string) SortMode {
 
 	default:
 		return SortNone
+	}
+}
+
+// VPrefix controls acceptance of a leading 'v' on input tags.
+// It is applied during the cheap pre-filter step before any SemVer parsing.
+type VPrefix uint8
+
+const (
+	// PrefixAny accepts both forms, with or without a leading 'v'
+	// (e.g., "1.2.3" and "v1.2.3").
+	PrefixAny VPrefix = iota
+
+	// PrefixV requires a leading 'v' (e.g., "v1.2.3"); tags without 'v'
+	// are rejected before SemVer parsing.
+	PrefixV
+
+	// PrefixNone forbids a leading 'v' (e.g., "1.2.3"); tags starting with 'v'
+	// are rejected before SemVer parsing.
+	PrefixNone // запрещать ведущий 'v'
+)
+
+// String returns a stable textual representation for VPrefix.
+func (m VPrefix) String() string {
+	switch m {
+	case PrefixV:
+		return "v"
+	case PrefixNone:
+		return "none"
+	default:
+		return "any"
+	}
+}
+
+// ParseVPrefix maps free-form strings to VPrefix.
+// Supported aliases (case-insensitive):
+//
+//	any:  "", "any", "*", "auto":
+//	v:    "v", "with-v", "require-v", "required":
+//	none: "none", "no-v", "without-v", "forbidden":
+func ParseVPrefix(s string) VPrefix {
+	switch toTok(s) {
+	case "", "any", "*", "auto":
+		return PrefixAny
+	case "v", "with-v", "require-v", "required":
+		return PrefixV
+	case "none", "no-v", "without-v", "forbidden":
+		return PrefixNone
+	default:
+		return PrefixAny
 	}
 }
 

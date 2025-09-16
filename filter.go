@@ -2,6 +2,7 @@ package rats
 
 import (
 	"sort"
+	"strings"
 
 	"github.com/woozymasta/semver"
 )
@@ -97,15 +98,29 @@ func Filter(in []string, opt Options) []string {
 // It returns true if the tag passes these prefilters and should be
 // considered for further processing.
 func prefilterTag(t string, opt Options) bool {
+	switch opt.VPrefix {
+	case PrefixV:
+		if !strings.HasPrefix(t, "v") {
+			return false
+		}
+	case PrefixNone:
+		if strings.HasPrefix(t, "v") {
+			return false
+		}
+	}
+
 	if opt.ExcludeSignatures && sigRe.MatchString(t) {
 		return false
 	}
+
 	if opt.Include != nil && !opt.Include.MatchString(t) {
 		return false
 	}
+
 	if opt.Exclude != nil && opt.Exclude.MatchString(t) {
 		return false
 	}
+
 	return true
 }
 
