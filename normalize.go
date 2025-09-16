@@ -1,12 +1,10 @@
 package rats
 
-import "strings"
-
 // normalizeShorthand converts X / X.Y into a full X.Y.Z string for comparison.
 // If the input is already X.Y.Z (with optional leading "v"), it is returned as-is (minus "v").
 // For any other form, this function strips a leading "v" and returns the remainder.
 func normalizeShorthand(tag string) string {
-	t := strings.TrimPrefix(tag, "v")
+	t := trimLeadingV(tag)
 
 	switch {
 	case relXYZ.MatchString(tag): // already full X.Y.Z
@@ -21,4 +19,13 @@ func normalizeShorthand(tag string) string {
 	default: // fallback: strip leading v only
 		return t
 	}
+}
+
+// trimLeadingV removes a single leading 'v' or 'V' if present.
+func trimLeadingV(s string) string {
+	if len(s) > 0 && (s[0] == 'v' || s[0] == 'V') {
+		return s[1:]
+	}
+
+	return s
 }

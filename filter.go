@@ -2,7 +2,6 @@ package rats
 
 import (
 	"sort"
-	"strings"
 
 	"github.com/woozymasta/semver"
 )
@@ -100,11 +99,11 @@ func Filter(in []string, opt Options) []string {
 func prefilterTag(t string, opt Options) bool {
 	switch opt.VPrefix {
 	case PrefixV:
-		if !strings.HasPrefix(t, "v") {
+		if !hasLeadingV(t) {
 			return false
 		}
 	case PrefixNone:
-		if strings.HasPrefix(t, "v") {
+		if hasLeadingV(t) {
 			return false
 		}
 	}
@@ -126,6 +125,11 @@ func prefilterTag(t string, opt Options) bool {
 	}
 
 	return true
+}
+
+// hasLeadingV reports whether s starts with 'v' or 'V'.
+func hasLeadingV(s string) bool {
+	return len(s) > 0 && (s[0] == 'v' || s[0] == 'V')
 }
 
 // parseCandidate parses a tag according to the current Options.
