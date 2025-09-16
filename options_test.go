@@ -172,6 +172,45 @@ func TestSortModeString(t *testing.T) {
 	}
 }
 
+func TestVPrefixString(t *testing.T) {
+	t.Parallel()
+	cases := map[VPrefix]string{
+		PrefixAny:  "any",
+		PrefixV:    "v",
+		PrefixNone: "none",
+	}
+	for in, want := range cases {
+		if got := in.String(); got != want {
+			t.Fatalf("VPrefix(%v).String() = %q; want %q", in, got, want)
+		}
+	}
+}
+
+func TestParseVPrefix(t *testing.T) {
+	t.Parallel()
+	cases := map[string]VPrefix{
+		"":          PrefixAny,
+		"any":       PrefixAny,
+		"*":         PrefixAny,
+		"auto":      PrefixAny,
+		"v":         PrefixV,
+		"with-v":    PrefixV,
+		"require-v": PrefixV,
+		"required":  PrefixV,
+		"none":      PrefixNone,
+		"no-v":      PrefixNone,
+		"without-v": PrefixNone,
+		"forbidden": PrefixNone,
+		"unknown":   PrefixAny, // default
+	}
+
+	for in, want := range cases {
+		if got := ParseVPrefix(in); got != want {
+			t.Fatalf("ParseVPrefix(%q) = %v; want %v", in, got, want)
+		}
+	}
+}
+
 // Sanity check that Options zero-value behaves as documented defaults.
 func TestOptionsZeroValue(t *testing.T) {
 	t.Parallel()

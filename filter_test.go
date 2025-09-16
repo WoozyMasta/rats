@@ -226,3 +226,102 @@ func TestDeduplicate_DepthPatch_Behavior(t *testing.T) {
 		}
 	}
 }
+
+// Fast path: no SemVer gating, just prefilter + VPrefix policy.
+func TestVPrefix_FastPath(t *testing.T) {
+	t.Parallel()
+
+	in := []string{"v1.2.3", "1.2.3", "foo"}
+
+	// PrefixV: only entries starting with 'v' pass.
+	{
+		opt := Options{
+			FilterSemver: false,
+			ReleaseOnly:  false,
+			VPrefix:      PrefixV,
+			Depth:        DepthPatch,
+		}
+		got := Filter(in, opt)
+		want := []string{"v1.2.3"}
+		if !reflect.DeepEqual(got, want) {
+			t.Fatalf("PrefixV fast-path got %v; want %v", got, want)
+		}
+	}
+
+	// PrefixNone: entries starting with 'v' are rejected.
+	{
+		opt := Options{
+			FilterSemver: false,
+			ReleaseOnly:  false,
+			VPrefix:      PrefixNone,
+			Depth:        DepthPatch,
+		}
+		got := Filter(in, opt)
+		want := []string{"1.2.3", "foo"}
+		if !reflect.DeepEqual(got, want) {
+			t.Fatalf("PrefixNone fast-path got %v; want %v", got, want)
+		}
+	}
+
+	// PrefixAny: accept both forms.
+	{
+		opt := Options{
+			FilterSemver: false,
+			ReleaseOnly:  false,
+			VPrefix:      PrefixAny,
+			Depth:        DepthPatch,
+		}
+		got := Filter(in, opt)
+		want := []string{"v1.2.3", "1.2.3", "foo"}
+		if !reflect.DeepEqual(got, want) {
+			t.Fatalf("PrefixAny fast-path got %v; want %v", got, want)
+		}
+	}
+}
+
+// SemVer path (ReleaseOnly): verify VPrefix interacts with parsing.
+func TestVPrefix_SemverPath_ReleaseOnly(t *testing.T) {
+	t.Parallel()
+
+	in := []string{"v1.2.3", "1.2.3", "v1.2.3-alpha"}
+
+	base := Options{
+		FilterSemver: true,
+		ReleaseOnly:  true,
+		Format:       FormatXYZ,
+		Depth:        DepthPatch,
+	}
+
+	// PrefixV => keep only "v1.2.3" (alpha is dropped by ReleaseOnly).
+	{
+		opt := base
+		opt.VPrefix = PrefixV
+		got := Filter(in, opt)
+		want := []string{"v1.2.3"}
+		if !reflect.DeepEqual(got, want) {
+			t.Fatalf("PrefixV semver-path got %v; want %v", got, want)
+		}
+	}
+
+	// PrefixNone => keep only "1.2.3".
+	{
+		opt := base
+		opt.VPrefix = PrefixNone
+		got := Filter(in, opt)
+		want := []string{"1.2.3"}
+		if !reflect.DeepEqual(got, want) {
+			t.Fatalf("PrefixNone semver-path got %v; want %v", got, want)
+		}
+	}
+
+	// PrefixAny => keep both "v1.2.3" and "1.2.3".
+	{
+		opt := base
+		opt.VPrefix = PrefixAny
+		got := Filter(in, opt)
+		want := []string{"v1.2.3", "1.2.3"}
+		if !reflect.DeepEqual(got, want) {
+			t.Fatalf("PrefixAny semver-path got %v; want %v", got, want)
+		}
+	}
+}
