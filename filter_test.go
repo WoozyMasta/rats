@@ -173,3 +173,56 @@ func TestFilter_OutputCanonical(t *testing.T) {
 		t.Fatalf("OutputCanonical got %v; want %v", got, want)
 	}
 }
+
+// Validate deduplication behavior across DepthPatch with various flags.
+func TestDeduplicate_DepthPatch_Behavior(t *testing.T) {
+	t.Parallel()
+
+	in := []string{"1.2.3", "v1.2.3", "1.2.3", "v1.2.3"}
+
+	base := Options{
+		FilterSemver: true,
+		ReleaseOnly:  true,
+		Format:       FormatXYZ,
+		Depth:        DepthPatch,
+		VPrefix:      PrefixAny,
+	}
+
+	// 1) No dedup, no canonical: duplicates remain as original order.
+	{
+		opt := base
+		opt.Deduplicate = false
+		opt.OutputCanonical = false
+		got := Filter(in, opt)
+		want := []string{"1.2.3", "v1.2.3", "1.2.3", "v1.2.3"}
+		if !reflect.DeepEqual(got, want) {
+			t.Fatalf("no dedup, no canonical got %v; want %v", got, want)
+		}
+	}
+
+	// 2) Deduplicate enabled: keep the first semantic version occurrence, preserve order.
+	{
+		opt := base
+		opt.Deduplicate = true
+		opt.OutputCanonical = false
+		got := Filter(in, opt)
+		// first seen semver is "1.2.3"
+		want := []string{"1.2.3"}
+		if !reflect.DeepEqual(got, want) {
+			t.Fatalf("dedup only got %v; want %v", got, want)
+		}
+	}
+
+	// 3) Canonical output implies dedup (by implementation): single canonical entry.
+	{
+		opt := base
+		opt.Deduplicate = false
+		opt.OutputCanonical = true
+		got := Filter(in, opt)
+		// canonical renders to vMAJOR.MINOR.PATCH
+		want := []string{"v1.2.3"}
+		if !reflect.DeepEqual(got, want) {
+			t.Fatalf("canonical (implied dedup) got %v; want %v", got, want)
+		}
+	}
+}
