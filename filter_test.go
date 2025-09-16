@@ -1,0 +1,175 @@
+package rats
+
+import (
+	"reflect"
+	"testing"
+)
+
+func TestMatchFormat(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		tag   string
+		form  Format
+		match bool
+	}{
+		{"1", FormatX, true},
+		{"v1", FormatX, true},
+		{"1.2", FormatXY, true},
+		{"v1.2", FormatXY, true},
+		{"1.2.3", FormatXYZ, true},
+		{"v1.2.3", FormatXYZ, true},
+
+		{"1.2.3", FormatX, false},
+		{"1.2", FormatX, false},
+		{"1", FormatXY, false},
+
+		// ReleaseOnly gate: '-' or '+' should reject
+		{"1.2.3-alpha", FormatXYZ, false},
+		{"1.2.3+build", FormatXYZ, false},
+	}
+
+	for _, tc := range cases {
+		got := matchFormat(tc.tag, tc.form)
+		if got != tc.match {
+			t.Fatalf("matchFormat(%q, %v) = %v; want %v", tc.tag, tc.form, got, tc.match)
+		}
+	}
+}
+
+func TestFilter_SignaturesOnly(t *testing.T) {
+	t.Parallel()
+
+	in := []string{
+		"sha256-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.sig",
+		"1.2.3",
+		"sha256-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.sig",
+		"foo",
+	}
+
+	opt := Options{
+		ExcludeSignatures: true,
+		FilterSemver:      false,
+		ReleaseOnly:       false,
+		Depth:             DepthPatch,
+	}
+
+	got := Filter(in, opt)
+	want := []string{"1.2.3", "foo"}
+
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("Filter signatures-only = %v; want %v", got, want)
+	}
+}
+
+func TestFilter_ReleaseOnly_ShorthandsAndNoPre(t *testing.T) {
+	t.Parallel()
+
+	in := []string{
+		"1", "1.2", "1.2.3",
+		"1.2.3-alpha", "2.0.0+build.1",
+		"v2", "v2.1", "v2.1.0",
+		"sha256-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.sig",
+	}
+
+	opt := Options{
+		ExcludeSignatures: true,
+		FilterSemver:      true,
+		ReleaseOnly:       true,
+		Format:            FormatAll,
+		Depth:             DepthPatch,
+		OutputCanonical:   false,
+	}
+
+	got := Filter(in, opt)
+	// Order is input order at DepthPatch; prerelease/build and signatures removed
+	want := []string{"1", "1.2", "1.2.3", "v2", "v2.1", "v2.1.0"}
+
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("Filter ReleaseOnly = %v; want %v", got, want)
+	}
+}
+
+func TestFilter_DepthAggregation(t *testing.T) {
+	t.Parallel()
+
+	in := []string{
+		"1.0.0", "1.0.1", "1.1.0", "1.1.1",
+		"2.0.0", "2.0.1", "2.1.0",
+	}
+
+	base := Options{
+		FilterSemver:      true,
+		ReleaseOnly:       true,
+		Format:            FormatXYZ,
+		ExcludeSignatures: true,
+	}
+
+	// DepthPatch: keep all (order preserved)
+	{
+		opt := base
+		opt.Depth = DepthPatch
+		got := Filter(in, opt)
+		if !reflect.DeepEqual(got, in) {
+			t.Fatalf("DepthPatch got %v; want %v", got, in)
+		}
+	}
+
+	// DepthMinor: latest per (major,minor)
+	{
+		opt := base
+		opt.Depth = DepthMinor
+		got := Filter(in, opt)
+		// (1,0)->1.0.1; (1,1)->1.1.1; (2,0)->2.0.1; (2,1)->2.1.0
+		// Implementation sorts globally by SemVer desc, so 2.x before 1.x.
+		want := []string{"2.1.0", "2.0.1", "1.1.1", "1.0.1"}
+		// Note: result order is descending by SemVer within groups.
+		if !reflect.DeepEqual(got, want) {
+			t.Fatalf("DepthMinor got %v; want %v", got, want)
+		}
+	}
+
+	// DepthMajor: latest per major
+	{
+		opt := base
+		opt.Depth = DepthMajor
+		got := Filter(in, opt)
+		// major 1 -> 1.1.1; major 2 -> 2.1.0
+		want := []string{"2.1.0", "1.1.1"}
+		if !reflect.DeepEqual(got, want) {
+			t.Fatalf("DepthMajor got %v; want %v", got, want)
+		}
+	}
+
+	// DepthLatest
+	{
+		opt := base
+		opt.Depth = DepthLatest
+		got := Filter(in, opt)
+		want := []string{"2.1.0"}
+		if !reflect.DeepEqual(got, want) {
+			t.Fatalf("DepthLatest got %v; want %v", got, want)
+		}
+	}
+}
+
+func TestFilter_OutputCanonical(t *testing.T) {
+	t.Parallel()
+
+	in := []string{"1", "1.2", "1.2.3"}
+	opt := Options{
+		FilterSemver:    true,
+		ReleaseOnly:     true,
+		Format:          FormatAll,
+		Depth:           DepthPatch,
+		OutputCanonical: true,
+	}
+
+	got := Filter(in, opt)
+	// Canonical form is vMAJOR.MINOR.PATCH (no build), so expect v1.0.0, v1.2.0, v1.2.3
+	want := []string{"v1.0.0", "v1.2.0", "v1.2.3"}
+
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("OutputCanonical got %v; want %v", got, want)
+	}
+}
