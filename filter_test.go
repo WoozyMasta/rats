@@ -325,3 +325,69 @@ func TestVPrefix_SemverPath_ReleaseOnly(t *testing.T) {
 		}
 	}
 }
+
+func TestLimit_FilterAsIs(t *testing.T) {
+	in := []string{"2.0.0", "1.0.0", "1.0.1", "1.0.2", "1.0.3"}
+	opt := Options{
+		FilterSemver: true,
+		ReleaseOnly:  true,
+		Format:       FormatXYZ,
+		Depth:        DepthPatch,
+		Limit:        2,
+	}
+
+	got := Filter(in, opt)
+	want := []string{"2.0.0", "1.0.0"}
+
+	if len(got) != opt.Limit {
+		t.Fatalf("got %d items, want %d items", len(got), opt.Limit)
+	}
+
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("got %v want %v", got, want)
+	}
+}
+
+func TestLimit_FilterSorted(t *testing.T) {
+	in := []string{"2.0.0", "1.0.0", "1.0.1", "1.0.2", "1.0.3"}
+	opt := Options{
+		FilterSemver: true,
+		ReleaseOnly:  true,
+		Format:       FormatXYZ,
+		Depth:        DepthPatch,
+		Sort:         SortDesc,
+		Limit:        2,
+	}
+
+	got := Select(in, opt)
+	want := []string{"2.0.0", "1.0.3"}
+
+	if len(got) != opt.Limit {
+		t.Fatalf("got %d items, want %d items", len(got), opt.Limit)
+	}
+
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("got %v want %v", got, want)
+	}
+}
+
+func TestLimit_Disabled(t *testing.T) {
+	in := []string{"2.0.0", "1.0.0", "1.0.1", "1.0.2", "1.0.3"}
+	opt := Options{
+		FilterSemver: true,
+		ReleaseOnly:  true,
+		Format:       FormatXYZ,
+		Depth:        DepthPatch,
+		Limit:        0,
+	}
+
+	got := Filter(in, opt)
+
+	if len(got) != len(in) {
+		t.Fatalf("got %d items, want %d items", len(got), len(in))
+	}
+
+	if !reflect.DeepEqual(got, in) {
+		t.Fatalf("got %v want %v", got, in)
+	}
+}

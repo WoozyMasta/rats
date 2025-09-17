@@ -4,12 +4,15 @@ package rats
 // It is equivalent to Sort(Filter(in, opt), opt.Sort, opt.ReleaseOnly).
 // When ReleaseOnly is true, Sort will normalize X / X.Y to X.0.0 / X.Y.0 for comparisons.
 func Select(in []string, opt Options) []string {
-	out := Filter(in, opt)
+	optNoLimit := opt
+	optNoLimit.Limit = 0
+
+	out := Filter(in, optNoLimit)
 	if opt.Sort != SortNone {
 		out = Sort(out, opt.Sort, opt.ReleaseOnly) // normalize X/X.Y when ReleaseOnly
 	}
 
-	return out
+	return capStrings(out, opt.Limit)
 }
 
 // DefaultOptions returns a practical preset for “stable releases”:

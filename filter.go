@@ -28,7 +28,8 @@ func Filter(in []string, opt Options) []string {
 			}
 			out = append(out, t)
 		}
-		return out
+
+		return capStrings(out, opt.Limit)
 	}
 
 	// Parse SemVer and retain structured values while preserving Original.
@@ -58,10 +59,10 @@ func Filter(in []string, opt Options) []string {
 	// Depth aggregation.
 	switch opt.Depth {
 	case DepthMinor:
-		return projectOut(latestPerMinor(vers), opt.OutputCanonical)
+		return capStrings(projectOut(latestPerMinor(vers), opt.OutputCanonical), opt.Limit)
 
 	case DepthMajor:
-		return projectOut(latestPerMajor(vers), opt.OutputCanonical)
+		return capStrings(projectOut(latestPerMajor(vers), opt.OutputCanonical), opt.Limit)
 
 	case DepthLatest:
 		if len(vers) == 0 {
@@ -75,7 +76,7 @@ func Filter(in []string, opt Options) []string {
 			}
 		}
 
-		return []string{pick(best, opt.OutputCanonical)}
+		return capStrings([]string{pick(best, opt.OutputCanonical)}, opt.Limit)
 
 	default: // DepthPatch
 		out := make([]string, 0, len(vers))
@@ -83,7 +84,7 @@ func Filter(in []string, opt Options) []string {
 			out = append(out, pick(v, opt.OutputCanonical))
 		}
 
-		return out
+		return capStrings(out, opt.Limit)
 	}
 }
 

@@ -51,6 +51,12 @@ func Sort(in []string, mode SortMode, normalizeShorthand bool) []string {
 	return out
 }
 
+// SortN sorts and then returns at most N items.
+// normalizeShorthand works as in Sort (true means X -> X.0.0 etc for compare).
+func SortN(in []string, mode SortMode, normalizeShorthand bool, n int) []string {
+	return capStrings(Sort(in, mode, normalizeShorthand), n)
+}
+
 // sortLex does a plain lexicographic sort as a fallback.
 func sortLex(in []string, mode SortMode) []string {
 	out := append([]string(nil), in...)

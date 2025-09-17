@@ -4,6 +4,9 @@ import "regexp"
 
 // Options configures filtering and sorting behavior.
 type Options struct {
+	// Limit trims the output to at most N entries. 0 or negative means "no limit".
+	Limit int
+
 	// FilterSemver enables SemVer gating (X.Y.Z[...]).
 	// If false and ReleaseOnly is false, only signature filtering is applied.
 	FilterSemver bool

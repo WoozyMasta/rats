@@ -49,3 +49,12 @@ func joinDash(parts []string) string {
 		return b.String()
 	}
 }
+
+// capStrings returns out[:min(limit, len(out))] if limit>0; otherwise out.
+func capStrings(out []string, limit int) []string {
+	if limit > 0 && limit < len(out) {
+		return out[:limit]
+	}
+
+	return out
+}
