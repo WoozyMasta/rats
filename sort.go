@@ -7,12 +7,12 @@ import (
 )
 
 // Sort orders tags using SemVer precedence when possible, otherwise falls back
-// to lexicographic sort. When normalizeShorthand=true, X and X.Y are first
+// to lexicographic sort. When normalize=true, X and X.Y are first
 // expanded to X.0.0 and X.Y.0 respectively for comparison.
 //
 // Note: ties are deterministically broken by the underlying semver.Compare,
 // which considers Original string if versions are otherwise equal.
-func Sort(in []string, mode SortMode, normalizeShorthand bool) []string {
+func Sort(in []string, mode SortMode, normalize bool) []string {
 	if mode == SortNone || len(in) < 2 {
 		return in
 	}
@@ -25,8 +25,8 @@ func Sort(in []string, mode SortMode, normalizeShorthand bool) []string {
 	arr := make([]item, 0, len(in))
 	for _, t := range in {
 		s := t
-		if normalizeShorthand {
-			s = normalizeShorthandFn(t) // indirection for test injection if needed
+		if normalize {
+			s = normalizeShorthand(t) // indirection for test injection if needed
 		}
 		v, ok := semver.ParseNoCanon(s)
 		if !ok || !v.IsValid() {
@@ -48,13 +48,14 @@ func Sort(in []string, mode SortMode, normalizeShorthand bool) []string {
 	for i, it := range arr {
 		out[i] = it.orig
 	}
+
 	return out
 }
 
 // SortN sorts and then returns at most N items.
-// normalizeShorthand works as in Sort (true means X -> X.0.0 etc for compare).
-func SortN(in []string, mode SortMode, normalizeShorthand bool, n int) []string {
-	return capStrings(Sort(in, mode, normalizeShorthand), n)
+// normalize works as in Sort (true means X -> X.0.0 etc for compare).
+func SortN(in []string, mode SortMode, normalize bool, n int) []string {
+	return capStrings(Sort(in, mode, normalize), n)
 }
 
 // sortLex does a plain lexicographic sort as a fallback.
@@ -65,8 +66,6 @@ func sortLex(in []string, mode SortMode) []string {
 	} else { // SortDesc
 		sort.Sort(sort.Reverse(sort.StringSlice(out)))
 	}
+
 	return out
 }
-
-// normalizeShorthandFn allows overriding in tests; default points to normalizeShorthand.
-var normalizeShorthandFn = normalizeShorthand
