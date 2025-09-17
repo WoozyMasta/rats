@@ -15,7 +15,7 @@ func Select(in []string, opt Options) []string {
 	return capStrings(out, opt.Limit)
 }
 
-// DefaultOptions returns a practical preset for “stable releases”:
+// DefaultOptions returns a practical preset for stable releases:
 //
 //   - FilterSemver: true          // only SemVer-like tags
 //   - ReleaseOnly:  true          // no prerelease/build
