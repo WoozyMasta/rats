@@ -2,7 +2,6 @@ package rats
 
 import (
 	"strings"
-	"unicode"
 )
 
 // toTok normalizes a free-form string into a lowercased token.
@@ -12,17 +11,31 @@ func toTok(s string) string {
 
 // splitTokens splits by common separators: comma, pipe, plus, slash, dash, space.
 func splitTokens(s string) []string {
-	f := func(r rune) bool {
-		// keep only letters and digits; anything else is a separator
-		return !(unicode.IsLetter(r) || unicode.IsDigit(r))
+	s = strings.ToLower(strings.TrimSpace(s))
+	if s == "" {
+		return nil
 	}
-	parts := strings.FieldsFunc(strings.ToLower(strings.TrimSpace(s)), f)
+	out := make([]string, 0, 8)
 
-	out := make([]string, 0, len(parts))
-	for _, p := range parts {
-		if p != "" {
-			out = append(out, p)
+	start := -1
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		isAlnum := (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9')
+		if isAlnum {
+			if start < 0 {
+				start = i
+			}
+			continue
 		}
+
+		if start >= 0 {
+			out = append(out, s[start:i])
+			start = -1
+		}
+	}
+
+	if start >= 0 {
+		out = append(out, s[start:])
 	}
 
 	return out
