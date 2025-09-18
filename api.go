@@ -9,9 +9,8 @@ func Select(in []string, opt Options) []string {
 
 	out := Filter(in, optNoLimit)
 	if opt.Sort != SortNone {
-		out = Sort(out, opt.Sort, opt.ReleaseOnly) // normalize X/X.Y when ReleaseOnly
+		out = Sort(out, opt.Sort)
 	}
-
 	return capStrings(out, opt.Limit)
 }
 

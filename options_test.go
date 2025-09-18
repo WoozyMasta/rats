@@ -230,17 +230,3 @@ func TestOptionsZeroValue(t *testing.T) {
 		t.Fatalf("zero Options = %#v; want %#v", opt, want)
 	}
 }
-
-func TestParseNoCanon_StringEmpty(t *testing.T) {
-	v, ok := parseSemver("1.2.3", false)
-	if !ok || v.String() != "" || v.Canon() != "" {
-		t.Fatalf("String/Canon must be empty after ParseNoCanon")
-	}
-}
-
-func TestParseCanon_StringEmpty(t *testing.T) {
-	v, ok := parseSemver("1.2.3", true)
-	if !ok || v.String() == "" || v.Canon() == "" {
-		t.Fatalf("String/Canon must be not empty after ParseCanon")
-	}
-}

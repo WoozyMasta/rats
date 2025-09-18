@@ -7,19 +7,10 @@ import (
 )
 
 // Filter applies signature/semver/release/depth rules and returns the filtered list.
-//
-// Behavior summary:
-//   - If both FilterSemver=false and ReleaseOnly=false => only signature and regex filtering.
-//   - If ReleaseOnly=true => accepts X / X.Y / X.Y.Z (optional leading "v"),
-//     rejects -prerelease and +build, and normalizes shorthands for comparison.
-//   - Else if FilterSemver=true => accepts valid SemVer X.Y.Z[...], including
-//     prereleases and build metadata.
-//   - Depth controls aggregation (patch/minor/major/latest).
-//   - Output form (Original/Canonical) is chosen later by pick().
 func Filter(in []string, opt Options) []string {
 	opt = opt.normalized()
 
-	// Fast path: only signature filtering.
+	// Fast path: only signature/regex filtering.
 	if !opt.FilterSemver && !opt.ReleaseOnly {
 		out := make([]string, 0, len(in))
 		for _, t := range in {
@@ -32,7 +23,7 @@ func Filter(in []string, opt Options) []string {
 		return capStrings(out, opt.Limit)
 	}
 
-	// Parse SemVer and retain structured values while preserving Original.
+	// Parse SemVer once and keep structured values.
 	vers := make([]semver.Semver, 0, len(in))
 	for _, t := range in {
 		if !prefilterTag(t, opt) {
@@ -43,15 +34,17 @@ func Filter(in []string, opt Options) []string {
 		if !ok {
 			continue
 		}
-
+		// keep original for output selection
 		v.Original = t
 		vers = append(vers, v)
 	}
 
+	// Range clipping (on parsed versions).
 	if opt.Range.Enabled() {
 		vers = clipRange(vers, opt.Range)
 	}
 
+	// Deduplicate aliases (e.g., "1.2" vs "v1.2.0") if requested or when canonicalizing.
 	if opt.Deduplicate || opt.OutputCanonical {
 		vers = deduplicateSemver(vers)
 	}
@@ -88,15 +81,7 @@ func Filter(in []string, opt Options) []string {
 	}
 }
 
-// prefilterTag applies cheap, non-SemVer checks to a raw tag:
-// - signature filtering (e.g., "sha256-...sig") if ExcludeSignatures is set;
-// - Include regex (must match if provided);
-// - Exclude regex (must NOT match if provided).
-// It runs before any SemVer parsing and is used on both the fast path
-// (no SemVer gating) and the SemVer path.
-//
-// It returns true if the tag passes these prefilters and should be
-// considered for further processing.
+// prefilterTag: cheap checks before parsing (user regexes, signatures, v-prefix policy).
 func prefilterTag(t string, opt Options) bool {
 	switch opt.VPrefix {
 	case PrefixV:
@@ -109,11 +94,7 @@ func prefilterTag(t string, opt Options) bool {
 		}
 	}
 
-	if opt.StrictSemver && !strictSemver.MatchString(t) {
-		return false
-	}
-
-	if opt.ExcludeSignatures && sigRe.MatchString(t) {
+	if opt.ExcludeSignatures && isSigTag(t) {
 		return false
 	}
 
@@ -128,73 +109,55 @@ func prefilterTag(t string, opt Options) bool {
 	return true
 }
 
-// hasLeadingV reports whether s starts with 'v' or 'V'.
 func hasLeadingV(s string) bool {
 	return len(s) > 0 && (s[0] == 'v' || s[0] == 'V')
 }
 
-// parseCandidate parses a tag according to the current Options.
-// In ReleaseOnly mode it:
-//   - requires that the tag matches one of the allowed release forms (X / X.Y / X.Y.Z);
-//   - normalizes shorthands (X -> X.0.0, X.Y -> X.Y.0) for comparison;
-//   - rejects any prerelease/build metadata (must be a plain release).
-//
-// When ReleaseOnly is false but FilterSemver is true, it accepts the full
-// SemVer grammar, including prerelease and build metadata.
-//
-// The parser used (with or without canonicalization) is chosen via parseSemver
-// based on OutputCanonical.
-//
-// The returned Semver has Valid=true on success. Note: the caller is responsible
-// for filling v.Original with the raw tag string.
+// parseCandidate parses once and applies ReleaseOnly + format mask using semver Flags.
 func parseCandidate(t string, opt Options) (semver.Semver, bool) {
-	if opt.ReleaseOnly {
-		if !matchFormat(t, opt.Format) {
-			return semver.Semver{}, false
-		}
+	v, ok := semver.Parse(t)
+	if !ok || !v.IsValid() {
+		return semver.Semver{}, false
+	}
 
-		v, ok := parseSemver(normalizeShorthand(t), opt.OutputCanonical)
-		if !ok || !v.IsValid() || v.Prerelease != "" || v.Build != "" {
-			return semver.Semver{}, false
-		}
-
+	if !opt.FilterSemver && !opt.ReleaseOnly {
+		// (the fast path already returned earlier, so we don't hit this)
 		return v, true
 	}
 
-	// SemVer-only (allow pre/build)
-	return parseSemver(t, opt.OutputCanonical)
-}
-
-// matchFormat ensures the tag is a release (no '-' or '+') and matches any allowed
-// shorthand form X / X.Y / X.Y.Z. It does not parse the version; that's done later.
-func matchFormat(tag string, forms Format) bool {
-	// Quick reject: release-only means no prerelease/build metadata.
-	for i := 0; i < len(tag); i++ {
-		switch tag[i] {
-		case '-', '+':
-			return false
+	if opt.ReleaseOnly {
+		if !v.IsRelease() { // no pre/build
+			return semver.Semver{}, false
+		}
+		if !formatAllowed(v, opt.Format) {
+			return semver.Semver{}, false
 		}
 	}
 
-	if forms&FormatXYZ != 0 && relXYZ.MatchString(tag) {
-		return true
-	}
-
-	if forms&FormatXY != 0 && relXY.MatchString(tag) {
-		return true
-	}
-
-	if forms&FormatX != 0 && relX.MatchString(tag) {
-		return true
-	}
-
-	return false
+	// else: FilterSemver==true (accept full semver, pre/build allowed)
+	return v, true
 }
 
-// latestPerMinor returns the latest per (major, minor).
-func latestPerMinor(vs []semver.Semver) []semver.Semver {
+// formatAllowed maps the release form mask to flags from the parsed version.
+// X    => !HasMinor && !HasPatch
+// X.Y  => HasMinor && !HasPatch
+// X.Y.Z=> HasPatch
+func formatAllowed(v semver.Semver, mask Format) bool {
+	if v.HasPatch() {
+		return (mask & FormatXYZ) != 0
+	}
+
+	if v.HasMinor() {
+		return (mask & FormatXY) != 0
+	}
+
+	return (mask & FormatX) != 0
+}
+
+// latestPerMinor / latestPerMajor unchanged
+func latestPerMinor(vs []semver.Semver) []semver.Semver { /* same as before */
 	type key struct{ maj, min int }
-	best := make(map[key]semver.Semver, len(vs))
+	best := make(map[key]semver.Semver)
 	for _, v := range vs {
 		k := key{v.Major, v.Minor}
 		if cur, ok := best[k]; !ok || v.Compare(cur) > 0 {
@@ -206,14 +169,14 @@ func latestPerMinor(vs []semver.Semver) []semver.Semver {
 	for _, v := range best {
 		acc = append(acc, v)
 	}
+
 	sort.Slice(acc, func(i, j int) bool { return acc[i].Compare(acc[j]) > 0 })
 
 	return acc
 }
 
-// latestPerMajor returns the latest per major.
-func latestPerMajor(vs []semver.Semver) []semver.Semver {
-	best := make(map[int]semver.Semver, len(vs))
+func latestPerMajor(vs []semver.Semver) []semver.Semver { /* same as before */
+	best := make(map[int]semver.Semver)
 	for _, v := range vs {
 		if cur, ok := best[v.Major]; !ok || v.Compare(cur) > 0 {
 			best[v.Major] = v
@@ -224,15 +187,16 @@ func latestPerMajor(vs []semver.Semver) []semver.Semver {
 	for _, v := range best {
 		acc = append(acc, v)
 	}
+
 	sort.Slice(acc, func(i, j int) bool { return acc[i].Compare(acc[j]) > 0 })
 
 	return acc
 }
 
-// pick selects which string to expose outward (Original vs Canonical).
+// Output selection
 func pick(v semver.Semver, canonical bool) string {
-	if canonical && v.Canonical != "" {
-		return v.Canonical
+	if canonical {
+		return v.Canonical()
 	}
 
 	return v.Original

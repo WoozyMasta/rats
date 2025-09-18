@@ -1,2 +1,4 @@
 github.com/woozymasta/semver v0.1.2 h1:ElCDk4f4UXhXZ7Nk/9vF/vBLvuLlIsWTimEqR+HxkMM=
 github.com/woozymasta/semver v0.1.2/go.mod h1:GlMfscYgUhq8YlGzdmsweN3bm2xghVEv2MNxHHKKMVs=
+github.com/woozymasta/semver v0.2.0 h1:lQc2zyaXBq9vzLlKjxu27BPqYXstg1WzmXqIcipedFc=
+github.com/woozymasta/semver v0.2.0/go.mod h1:GlMfscYgUhq8YlGzdmsweN3bm2xghVEv2MNxHHKKMVs=

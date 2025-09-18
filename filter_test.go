@@ -5,45 +5,13 @@ import (
 	"testing"
 )
 
-func TestMatchFormat(t *testing.T) {
-	t.Parallel()
-
-	cases := []struct {
-		tag   string
-		form  Format
-		match bool
-	}{
-		{"1", FormatX, true},
-		{"v1", FormatX, true},
-		{"1.2", FormatXY, true},
-		{"v1.2", FormatXY, true},
-		{"1.2.3", FormatXYZ, true},
-		{"v1.2.3", FormatXYZ, true},
-
-		{"1.2.3", FormatX, false},
-		{"1.2", FormatX, false},
-		{"1", FormatXY, false},
-
-		// ReleaseOnly gate: '-' or '+' should reject
-		{"1.2.3-alpha", FormatXYZ, false},
-		{"1.2.3+build", FormatXYZ, false},
-	}
-
-	for _, tc := range cases {
-		got := matchFormat(tc.tag, tc.form)
-		if got != tc.match {
-			t.Fatalf("matchFormat(%q, %v) = %v; want %v", tc.tag, tc.form, got, tc.match)
-		}
-	}
-}
-
 func TestFilter_SignaturesOnly(t *testing.T) {
 	t.Parallel()
 
 	in := []string{
-		"sha256-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.sig",
+		"sha256-da54c37e1801f44b1bb9c8ce3a96d08e92786f88d035dcd55641a06b7d06224a.sig",
 		"1.2.3",
-		"sha256-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.sig",
+		"sha256-F1E30DC8B009CA9BB27424C8DAF693F7854588B4767CEA8404D66F987FDA5AB7.sig",
 		"foo",
 	}
 

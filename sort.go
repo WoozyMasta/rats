@@ -7,12 +7,11 @@ import (
 )
 
 // Sort orders tags using SemVer precedence when possible, otherwise falls back
-// to lexicographic sort. When normalize=true, X and X.Y are first
-// expanded to X.0.0 and X.Y.0 respectively for comparison.
+// to lexicographic sort.
 //
 // Note: ties are deterministically broken by the underlying semver.Compare,
 // which considers Original string if versions are otherwise equal.
-func Sort(in []string, mode SortMode, normalize bool) []string {
+func Sort(in []string, mode SortMode) []string {
 	if mode == SortNone || len(in) < 2 {
 		return in
 	}
@@ -24,11 +23,7 @@ func Sort(in []string, mode SortMode, normalize bool) []string {
 
 	arr := make([]item, 0, len(in))
 	for _, t := range in {
-		s := t
-		if normalize {
-			s = normalizeShorthand(t) // indirection for test injection if needed
-		}
-		v, ok := semver.ParseNoCanon(s)
+		v, ok := semver.Parse(t)
 		if !ok || !v.IsValid() {
 			// Fallback: lexicographic sort if any tag is not a valid SemVer.
 			return sortLex(in, mode)
@@ -53,9 +48,8 @@ func Sort(in []string, mode SortMode, normalize bool) []string {
 }
 
 // SortN sorts and then returns at most N items.
-// normalize works as in Sort (true means X -> X.0.0 etc for compare).
-func SortN(in []string, mode SortMode, normalize bool, n int) []string {
-	return capStrings(Sort(in, mode, normalize), n)
+func SortN(in []string, mode SortMode, n int) []string {
+	return capStrings(Sort(in, mode), n)
 }
 
 // sortLex does a plain lexicographic sort as a fallback.

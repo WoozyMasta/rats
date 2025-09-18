@@ -37,7 +37,7 @@ func TestRange_Min_Shorthand_IncludePreAtFloor(t *testing.T) {
 	}
 	opt := baseRangeOpt()
 	opt.Range = Range{
-		Min:                    "1.2",
+		Min:               "1.2",
 		IncludePrerelease: true, // floor = 1.2.0-0 (inclusive), so alpha is included
 	}
 	got := Filter(in, opt)
@@ -73,11 +73,11 @@ func TestRange_Max_FullSemver_Exclusive(t *testing.T) {
 	opt := baseRangeOpt()
 	opt.Range = Range{
 		Max:          "1.2.3",
-		MaxExclusive: true, // < 1.2.3-0 => only 1.2.2 fits
+		MaxExclusive: true, // < 1.2.3  (prereleases like 1.2.3-rc1 are included)
 	}
 	got := Filter(in, opt)
-	want := []string{"1.2.2"}
-	if len(got) != 1 || got[0] != want[0] {
+	want := []string{"1.2.2", "1.2.3-rc1"}
+	if len(got) != len(want) || got[0] != want[0] || got[1] != want[1] {
 		t.Fatalf("Max full exclusive: got %v; want %v", got, want)
 	}
 }
@@ -90,9 +90,9 @@ func TestRange_BothBounds_WithPreAtFloor(t *testing.T) {
 	}
 	opt := baseRangeOpt()
 	opt.Range = Range{
-		Min:                    "1",
+		Min:               "1",
 		IncludePrerelease: true,    // >= 1.0.0-0
-		Max:                    "2.0.0", // inclusive => < 2.0.1-0
+		Max:               "2.0.0", // inclusive => < 2.0.1-0
 	}
 	got := Filter(in, opt)
 	want := []string{"1.0.0-alpha", "1.5.0", "2.0.0"}

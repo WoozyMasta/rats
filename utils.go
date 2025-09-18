@@ -71,3 +71,23 @@ func capStrings(out []string, limit int) []string {
 
 	return out
 }
+
+// isSigTag reports whether s matches "sha256-<64 anycase hex>.sig".
+func isSigTag(s string) bool {
+	// "sha256-" (7) + 64 hex + ".sig" (4) = 75
+	if len(s) != 75 || s[:7] != "sha256-" || s[71:] != ".sig" {
+		return false
+	}
+
+	// check 64 anycase hex chars
+	for i := 7; i < 71; i++ {
+		c := s[i]
+		if (c < '0' || c > '9') &&
+			(c < 'a' || c > 'f') &&
+			(c < 'A' || c > 'F') {
+			return false
+		}
+	}
+
+	return true
+}
