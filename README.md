@@ -107,8 +107,8 @@ Help Options:
   -h, --help                                    Show this help message
 ```
 
-The utility accepts `true|false` or `1|0` for boolean flags and allows you to disable them.
-
+The utility accepts `true|false` or `1|0` for boolean flags and allows you
+to disable them.  
 For example, you can disable all processing.
 
 ```shell
