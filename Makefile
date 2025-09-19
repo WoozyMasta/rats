@@ -154,14 +154,17 @@ clean-dist:
 
 # Release helpers
 tag-lib:
-	@test -n "$(VERSION)" || (echo "VERSION is required"; exit 2)
-	git tag v$(VERSION)
-	git push origin v$(VERSION)
+	@test -n "$(VERSION)" || VERSION="$(word 2,$(MAKECMDGOALS))"; \
+	[ -n "$$VERSION" ] || { echo "VERSION is required"; exit 2; }; \
+	git tag v$$VERSION && git push origin v$$VERSION
 
 tag-cli:
-	@test -n "$(VERSION)" || (echo "VERSION is required"; exit 2)
-	git tag cmd/$(BINARY)/v$(VERSION)
-	git push origin cmd/$(BINARY)/v$(VERSION)
+	@test -n "$(VERSION)" || VERSION="$(word 2,$(MAKECMDGOALS))"; \
+	[ -n "$$VERSION" ] || { echo "VERSION is required"; exit 2; }; \
+	git tag cmd/$(BINARY)/v$$VERSION && git push origin cmd/$(BINARY)/v$$VERSION
+
+%:
+	@:
 
 # Tool installer
 tools:
