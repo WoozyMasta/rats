@@ -73,38 +73,46 @@ Usage:
 
 RATS — Release App Tag Selector.
 A CLI tool for selecting versions from tag lists:
-supports SemVer and Go canonical (v-prefixed), can filter prereleases, drop build metadata, sort and aggregate results.
+supports SemVer and Go canonical (v-prefixed), can filter prereleases, drop build metadata, sort and
+aggregate results.
 
 SemVer and releases:
-  -s, --semver                                  Keep only SemVer tags (X.Y.Z[-pre][+build]) (default: true)
-  -r, --release-only                            Keep only releases (no -pre/+build); allow X / X.Y / X.Y.Z (default: true)
-  -d, --deduplicate                             Collapse aliases of the same version (MAJOR.MINOR.PATCH+PRERELEASE) (default: true)
+  -s, --semver                                       Keep only SemVer tags (X.Y.Z[-pre][+build])
+                                                     (default: true)
+  -r, --release-only                                 Keep only releases (no -pre/+build);
+                                                     allow X / X.Y / X.Y.Z (default: true)
+  -d, --deduplicate                                  Collapse aliases of the same version
+                                                     (MAJOR.MINOR.PATCH+PRERELEASE) (default: true)
 
 Output:
-  -c, --canonical-out                           Print canonical vMAJOR.MINOR.PATCH[-PRERELEASE] (drop +BUILD)
-  -v, --semver-out                              Print SemVer MAJOR.MINOR.PATCH[-PRERELEASE][+BUILD]
+  -c, --canonical-out                                Print canonical vMAJOR.MINOR.PATCH[-PRERELEASE]
+                                                     (drop +BUILD)
+  -v, --semver-out                                   Print SemVer MAJOR.MINOR.PATCH[-PRERELEASE][+BUILD]
 
 Aggregation and sort:
-  -n, --limit=                                  Max number of output tags (<=0 = unlimited) (default: 0)
-  -D, --depth=[patch|minor|major|latest]        Aggregation depth (default: minor)
-  -S, --sort=[none|asc|desc]                    Sort output tags (default: desc)
-  -f, --format=[x|xy|xyz|x-xy|x-xyz|xy-xyz|any] Allowed release forms (when --release-only) (default: any)
+  -n, --limit=                                       Max number of output tags (<=0 = unlimited)
+                                                     (default: 0)
+  -D, --depth=[none|patch|minor|major|latest]        Aggregation depth (default: minor)
+  -S, --sort=[none|asc|desc]                         Sort output tags (default: desc)
+  -f, --format=[none|x|xy|xyz|x-xy|x-xyz|xy-xyz|any] Allowed release forms (when --release-only)
+                                                     (default: any)
 
 Input filters:
-  -V, --v-prefix=[any|v|none]                   Policy for leading 'v' in tags (default: any)
-  -i, --include=                                Regexp to keep tags (applied before parsing)
-  -e, --exclude=                                Regexp to drop tags (applied before parsing)
-  -E, --exclude-sigs                            Drop sha256-<64>.sig tags
+  -V, --v-prefix=[any|v|none]                        Policy for leading 'v' in tags (default: any)
+  -i, --include=                                     Regexp to keep tags (applied before parsing)
+  -e, --exclude=                                     Regexp to drop tags (applied before parsing)
+  -E, --exclude-sigs                                 Drop sha256-<64>.sig tags
 
 Range:
-  -m, --min=                                    Lower bound (X / X.Y / X.Y.Z or full SemVer)
-  -x, --max=                                    Upper bound (X / X.Y / X.Y.Z or full SemVer)
-  -M, --min-exclusive                           Exclude lower bound itself
-  -X, --max-exclusive                           Exclude upper bound itself
-  -p, --include-prerelease                      When min is shorthand, include prereleases at the floor (>= X.Y.0-0)
+  -m, --min=                                         Lower bound (X / X.Y / X.Y.Z or full SemVer)
+  -x, --max=                                         Upper bound (X / X.Y / X.Y.Z or full SemVer)
+  -M, --min-exclusive                                Exclude lower bound itself
+  -X, --max-exclusive                                Exclude upper bound itself
+  -p, --include-prerelease                           When min is shorthand, include prereleases at the
+                                                     floor (>= X.Y.0-0)
 
 Help Options:
-  -h, --help                                    Show this help message
+  -h, --help                                         Show this help message
 ```
 
 The utility accepts `true|false` or `1|0` for boolean flags and allows you

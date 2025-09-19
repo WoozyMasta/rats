@@ -10,6 +10,7 @@ SBOM        ?= cyclonedx-gomod
 CGO_ENABLED ?= 0
 GOFLAGS     ?= -buildvcs=false -trimpath
 LDFLAGS     ?= -s -w
+GOFTAGS     ?= forceposix
 
 PKG         := github.com/woozymasta/rats
 CMD_DIR     := cmd/$(BINARY)
@@ -43,7 +44,8 @@ all: build
 build:
 	cd $(CMD_DIR) && \
 	  CGO_ENABLED=$(CGO_ENABLED) GOOS=$(GOOS) GOARCH=$(GOARCH) \
-	  $(GO) build $(GOFLAGS) -ldflags '$(LDFLAGS)' -o ../../bin/$(BINARY)$(SUFFIX)
+	  $(GO) build $(GOFLAGS) -ldflags '$(LDFLAGS)' \
+			-tags '$(GOFTAGS)' -o ../../bin/$(BINARY)$(SUFFIX)
 	@# SBOM next to the local binary
 	@if command -v $(SBOM) >/dev/null 2>&1; then \
 	  echo ">> SBOM bin/$(BINARY)$(SUFFIX)"; \
@@ -115,7 +117,8 @@ build-matrix:
 	    echo ">> building $${out}"; \
 	    (cd $(CMD_DIR) && \
 	      CGO_ENABLED=$(CGO_ENABLED) GOOS=$${os} GOARCH=$${arch} \
-	      $(GO) build $(GOFLAGS) -ldflags '$(LDFLAGS)' -o "../../$${out}"); \
+	      $(GO) build $(GOFLAGS) -ldflags '$(LDFLAGS)' -tags '$(GOFTAGS)' \
+					-o "../../$${out}"); \
 	  done; \
 	done
 
