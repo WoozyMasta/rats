@@ -1,4 +1,4 @@
-# ---- Config ----
+# Config
 BINARY      := rats
 GO          ?= go
 LINTER      ?= golangci-lint
@@ -36,12 +36,10 @@ ARCH_LIST   ?= amd64 arm64
 # Git hooks
 HOOKS_DIR   := .githooks
 
-# ---- Default ----
+# Default
 all: build
 
-# ---- Dev tasks ----
-
-## Local build for host platform (CLI) + SBOM
+# Local build for host platform (CLI) + SBOM
 build:
 	cd $(CMD_DIR) && \
 	  CGO_ENABLED=$(CGO_ENABLED) GOOS=$(GOOS) GOARCH=$(GOARCH) \
@@ -55,24 +53,24 @@ build:
 	  echo "!! $(SBOM) not found; skip SBOM for bin/$(BINARY)$(SUFFIX)"; \
 	fi
 
-## Install CLI into GOBIN/GOPATH/bin
+# Install CLI into GOBIN/GOPATH/bin
 install:
 	$(GO) install $(PKG)/cmd/$(BINARY)@latest
 
-## Tests (lib) + ensure CLI compiles
+# Tests (lib) + ensure CLI compiles
 test:
 	$(GO) test ./...
 	cd $(CMD_DIR) && CGO_ENABLED=$(CGO_ENABLED) $(GO) build $(GOFLAGS) -ldflags '$(LDFLAGS)' ./...
 
-## Lint
+# Lint
 lint:
 	$(LINTER) run ./...
 
-## Alignment check
+# Alignment check
 align:
 	$(ALIGNER) ./...
 
-## go mod tidy in both modules
+# go mod tidy in both modules
 tidy:
 	@set -e; \
 	for m in $(MODULES); do \
@@ -80,18 +78,18 @@ tidy:
 		(cd $$m && $(GO) mod tidy); \
 	done
 
-## Validate before commit
+# Validate before commit
 validate: tidy test lint align
 	@echo "OK"
 
-## Bench log
+# Bench log
 bench-log:
 	@mkdir -p $(BENCH_DIR)
 	@echo "# bench $(BENCH_TS) commit $(GIT_SHA)" | tee -a $(BENCH_FILE)
 	@$(GO) test -run='^$$' -bench=. -benchmem ./... | tee -a $(BENCH_FILE)
 	@echo "wrote $(BENCH_FILE)"
 
-## Bench diff (last two logs)
+# Bench diff (last two logs)
 bench-diff:
 	@set -e; \
 	files=$$(ls -1 $(BENCH_DIR)/bench_*.txt 2>/dev/null | sort | tail -n 2); \
@@ -104,10 +102,10 @@ bench-diff:
 		$(GO) run golang.org/x/perf/cmd/benchstat $$files; \
 	fi
 
-## Full bench workflow: log + diff
+# Full bench workflow: log + diff
 bench: bench-log bench-diff
 
-## Build matrix: $(OS_LIST) x $(ARCH_LIST) into dist/
+# Build matrix: $(OS_LIST) x $(ARCH_LIST) into dist/
 build-matrix:
 	@set -e; mkdir -p $(DIST); \
 	for os in $(OS_LIST); do \
@@ -121,7 +119,7 @@ build-matrix:
 	  done; \
 	done
 
-## Generate SBOMs for all dist artifacts
+# Generate SBOMs for all dist artifacts
 sbom-dist:
 	@set -e; \
 	ls -1 $(DIST)/$(BINARY)-* >/dev/null 2>&1 || { echo "no artifacts in $(DIST)"; exit 0; }; \
@@ -136,25 +134,25 @@ sbom-dist:
 	  fi; \
 	done
 
-## Checksums for dist artifacts
+# Checksums for dist artifacts
 checksums:
 	@set -e; \
 	ls -1 $(DIST)/$(BINARY)-* 1>/dev/null 2>&1 || { echo "no artifacts in $(DIST)"; exit 0; }; \
 	( cd $(DIST) && shasum -a 256 $(BINARY)-* 2>/dev/null || sha256sum $(BINARY)-* ) > $(DIST)/SHA256SUMS
 	@echo "wrote $(DIST)/SHA256SUMS"
 
-## Release bundle: build + sbom + checksums
+# Release bundle: build + sbom + checksums
 release: clean-dist build-matrix sbom-dist checksums
 	@echo "Artifacts in $(DIST)/"
 
-## Clean
+# Clean
 clean:
 	rm -rf bin/
 
 clean-dist:
 	rm -rf $(DIST)/
 
-# ---- Release helpers ----
+# Release helpers
 tag-lib:
 	@test -n "$(VERSION)" || (echo "VERSION is required"; exit 2)
 	git tag v$(VERSION)
@@ -165,7 +163,7 @@ tag-cli:
 	git tag cmd/$(BINARY)/v$(VERSION)
 	git push origin cmd/$(BINARY)/v$(VERSION)
 
-# ---- Tool installers ----
+# Tool installer
 tools:
 	@echo ">> installing golangci-lint"
 	$(GO) install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
@@ -177,15 +175,21 @@ tools:
 	$(GO) install github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@latest
 
 
-## Eenable git hooks into .githooks
-hooks-install:
+# Enable git hooks into .githooks
+hooks-enable:
 	@git config core.hooksPath $(HOOKS_DIR)
 	@echo "hooks installed to $(HOOKS_DIR) and enabled"
 
-## Disable git hooks
+# Disable git hooks
 hooks-disable:
 	@git config --unset core.hooksPath || :
 	@echo "hooks disabled (core.hooksPath unset)"
 
-.PHONY: all build install test lint align tidy validate bench-log bench-diff bench \
-        build-matrix sbom-dist checksums release clean clean-dist tag-lib tag-cli tools
+.PHONY: \
+	all build install test lint align tidy validate \
+	bench-log bench-diff bench \
+	build-matrix sbom-dist checksums release \
+	clean clean-dist \
+	tag-lib tag-cli \
+	tools \
+	hooks-enable hooks-disable
