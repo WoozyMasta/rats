@@ -55,6 +55,66 @@ Input is just a `[]string` of tags; output is a filtered and sorted list.
 * Shorthands are accepted only in ReleaseOnly mode.
 * Build metadata is always stripped in Canonical (per [SemVer]).
 
+## Installation
+
+```shell
+go get github.com/woozymasta/semver
+```
+
+## CLI
+
+```shell
+go install github.com/woozymasta/rats/cmd/rats@latest
+```
+
+```txt
+Usage:
+  rats [OPTIONS]
+
+RATS — Release App Tag Selector.
+A CLI tool for selecting versions from tag lists:
+supports SemVer and Go canonical (v-prefixed), can filter prereleases, drop build metadata, sort and aggregate results.
+
+SemVer and releases:
+  -s, --semver                                  Keep only SemVer tags (X.Y.Z[-pre][+build]) (default: true)
+  -r, --release-only                            Keep only releases (no -pre/+build); allow X / X.Y / X.Y.Z (default: true)
+  -d, --deduplicate                             Collapse aliases of the same version (MAJOR.MINOR.PATCH+PRERELEASE) (default: true)
+
+Output:
+  -c, --canonical-out                           Print canonical vMAJOR.MINOR.PATCH[-PRERELEASE] (drop +BUILD)
+  -v, --semver-out                              Print SemVer MAJOR.MINOR.PATCH[-PRERELEASE][+BUILD]
+
+Aggregation and sort:
+  -n, --limit=                                  Max number of output tags (<=0 = unlimited) (default: 0)
+  -D, --depth=[patch|minor|major|latest]        Aggregation depth (default: minor)
+  -S, --sort=[none|asc|desc]                    Sort output tags (default: desc)
+  -f, --format=[x|xy|xyz|x-xy|x-xyz|xy-xyz|any] Allowed release forms (when --release-only) (default: any)
+
+Input filters:
+  -V, --v-prefix=[any|v|none]                   Policy for leading 'v' in tags (default: any)
+  -i, --include=                                Regexp to keep tags (applied before parsing)
+  -e, --exclude=                                Regexp to drop tags (applied before parsing)
+  -E, --exclude-sigs                            Drop sha256-<64>.sig tags
+
+Range:
+  -m, --min=                                    Lower bound (X / X.Y / X.Y.Z or full SemVer)
+  -x, --max=                                    Upper bound (X / X.Y / X.Y.Z or full SemVer)
+  -M, --min-exclusive                           Exclude lower bound itself
+  -X, --max-exclusive                           Exclude upper bound itself
+  -p, --include-prerelease                      When min is shorthand, include prereleases at the floor (>= X.Y.0-0)
+
+Help Options:
+  -h, --help                                    Show this help message
+```
+
+The utility accepts `true|false` or `1|0` for boolean flags and allows you to disable them.
+
+For example, you can disable all processing.
+
+```shell
+some-tool-print-tags | rats -r=0 -s=0 -d=0 -c=0 -v=0 -D=none -S=none -f=none -V=any -E=0
+```
+
 ## Example
 
 Basic example of use

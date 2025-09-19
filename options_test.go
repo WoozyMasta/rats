@@ -9,7 +9,12 @@ func TestParseDepth(t *testing.T) {
 	t.Parallel()
 
 	cases := map[string]Depth{
-		"":        DepthPatch, // default
+		"":        DepthAny, // default
+		"any":     DepthAny,
+		"none":    DepthAny,
+		"off":     DepthAny,
+		"raw":     DepthAny,
+		"*":       DepthAny,
 		"latest":  DepthLatest,
 		"l":       DepthLatest,
 		"head":    DepthLatest,
@@ -27,7 +32,7 @@ func TestParseDepth(t *testing.T) {
 		"pth":     DepthPatch,
 		"xyz":     DepthPatch,
 		"3":       DepthPatch,
-		"unknown": DepthPatch, // fallback
+		"unknown": DepthAny,   // fallback
 		"  MiN  ": DepthMinor, // case/space-insensitive
 	}
 
@@ -42,6 +47,7 @@ func TestDepthString(t *testing.T) {
 	t.Parallel()
 
 	cases := map[Depth]string{
+		DepthAny:    "any",
 		DepthPatch:  "patch",
 		DepthMinor:  "minor",
 		DepthMajor:  "major",
@@ -62,7 +68,12 @@ func TestParseFormat(t *testing.T) {
 		in   string
 		want Format
 	}{
-		{"", FormatXYZ}, // default when empty
+		// none
+		{"", FormatNone},
+		{"none", FormatNone},
+		{"no", FormatNone},
+		{"0", FormatNone},
+		{"n", FormatNone},
 
 		// singles
 		{"x", FormatX},
@@ -110,6 +121,7 @@ func TestFormatString(t *testing.T) {
 		in   Format
 		want string
 	}{
+		{FormatNone, "none"},
 		{FormatX, "x"},
 		{FormatXY, "xy"},
 		{FormatXYZ, "xyz"},

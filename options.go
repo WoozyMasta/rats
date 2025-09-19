@@ -4,8 +4,20 @@ import "regexp"
 
 // Options configures filtering and sorting behavior.
 type Options struct {
+	// Include positive regex filters applied to the raw tag and keep only tags that match.
+	Include *regexp.Regexp
+
+	// Exclude negative regex filters applied to the raw tag and drop tags that match.
+	Exclude *regexp.Regexp
+
+	// Range clipping. Applied after parsing and before aggregation.
+	Range Range
+
 	// Limit trims the output to at most N entries. 0 or negative means "no limit".
 	Limit int
+
+	// Depth controls aggregation (patch/minor/major/latest).
+	Depth Depth
 
 	// FilterSemver enables SemVer gating (X.Y.Z[...]).
 	// If false and ReleaseOnly is false, only signature filtering is applied.
@@ -22,22 +34,17 @@ type Options struct {
 	Deduplicate bool
 
 	// OutputCanonical when true returns canonical version string (vMAJOR.MINOR.PATCH[-PRERELEASE]),
-	// build metadata stripped), otherwise returns the original input tag.
+	// build metadata stripped, otherwise returns the original input tag.
 	OutputCanonical bool
+
+	// OutputSemVer when true returns SemVer version string (MAJOR.MINOR.PATCH[-PRERELEASE][+BUILD]),
+	// otherwise returns the original input tag.
+	OutputSemVer bool
 
 	// ExcludeSignatures drops signature-like tags: sha256-<64 hex>.sig
 	ExcludeSignatures bool
 
-	// Include positive regex filters applied to the raw tag and keep only tags that match.
-	Include *regexp.Regexp
-
-	// Exclude negative regex filters applied to the raw tag and drop tags that match.
-	Exclude *regexp.Regexp
-
-	// Depth controls aggregation (patch/minor/major/latest).
-	Depth Depth
-
-	// Forms restricts allowed release forms in ReleaseOnly mode (X/XY/XYZ).
+	// Format restricts allowed release format in ReleaseOnly mode (X/XY/XYZ).
 	// Ignored if ReleaseOnly=false. Default is FormatXYZ.
 	Format Format
 
@@ -48,17 +55,28 @@ type Options struct {
 	// This only affects input acceptance. If OutputCanonical=true, the canonical
 	// string will use the "vMAJOR.MINOR.PATCH[...]" form per SemVer rules.
 	VPrefix VPrefix
-
-	// Range clipping. Applied after parsing and before aggregation.
-	Range Range
 }
 
 // normalized returns a copy with implicit defaults applied.
 func (o Options) normalized() Options {
 	out := o
 
+	// any depth filtering require
+	if out.Depth != DepthAny {
+		out.FilterSemver = true
+
+		// out.ReleaseOnly = true // TODO
+
+		// When ReleaseOnly is active and format not set, default XYZ.
+		if out.Format == 0 {
+			out.Format = FormatXYZ
+		}
+
+		return out
+	}
+
 	// ReleaseOnly implies SemVer gating.
-	if out.ReleaseOnly && !out.FilterSemver {
+	if (out.ReleaseOnly || out.OutputCanonical) && !out.FilterSemver {
 		out.FilterSemver = true
 	}
 
@@ -74,8 +92,13 @@ func (o Options) normalized() Options {
 type Depth int
 
 const (
-	// DepthPatch keeps all distinct X.Y.Z* entries (no aggregation).
-	DepthPatch Depth = iota
+	// DepthAny disables semantic aggregation. It is a "raw" depth:
+	// Select will not enforce SemVer gating via normalization.
+	// Use this when you want plain filtering/sorting without SemVer grouping.
+	DepthAny Depth = iota
+	// DepthPatch keeps all X.Y.Z* entries (no grouping),
+	// but works inside the SemVer pipeline (gating may be enabled).
+	DepthPatch
 	// DepthMinor keeps the latest per (major, minor).
 	DepthMinor
 	// DepthMajor keeps the latest per major.
@@ -93,8 +116,10 @@ func (d Depth) String() string {
 		return "major"
 	case DepthMinor:
 		return "minor"
-	default:
+	case DepthPatch:
 		return "patch"
+	default:
+		return "any"
 	}
 }
 
@@ -105,8 +130,9 @@ func (d Depth) String() string {
 //	major:   "major","maj","x","1"
 //	minor:   "minor","min","xy","2"
 //	patch:   "patch","pth","xyz","3"
+//	any:     "any","none","off","raw","*"
 func ParseDepth(s string) Depth {
-	switch toTok(s) {
+	switch toToken(s) {
 	// single latest
 	case "latest", "l", "head", "max", "0":
 		return DepthLatest
@@ -123,27 +149,36 @@ func ParseDepth(s string) Depth {
 	case "patch", "pth", "xyz", "3":
 		return DepthPatch
 
+		// no semantic aggregation, do not force SemVer gating
+	case "any", "none", "off", "raw", "*":
+		return DepthAny
+
 	default:
-		return DepthPatch
+		return DepthAny
 	}
 }
 
-// Format is a bitmask of allowed release forms: X / X.Y / X.Y.Z.
+// Format is a bitmask of allowed release format: X / X.Y / X.Y.Z.
 type Format uint8
 
 const (
+	// FormatNone disable formatter
+	FormatNone Format = 1 << iota
 	// FormatXYZ allows X.Y.Z.
-	FormatXYZ Format = 1 << iota
+	FormatXYZ
 	// FormatXY allows X.Y.
 	FormatXY
 	// FormatX allows X.
 	FormatX
-	// FormAll enables all forms (X, X.Y, X.Y.Z).
+	// FormAll enables all format (X, X.Y, X.Y.Z).
 	FormatAll = FormatXYZ | FormatXY | FormatX
 )
 
 // String returns a canonical textual representation like "x-xy-xyz".
 func (f Format) String() string {
+	if f == FormatNone {
+		return "none"
+	}
 	if f == FormatAll {
 		return "x-xy-xyz"
 	}
@@ -173,13 +208,15 @@ func (f Format) String() string {
 //	single: "x", "xy", "xyz", "1|2|3", "major|minor|patch"
 //	combos: "x-xy", "x,xyz", "xy|xyz", "x+xy+xyz"
 //	any:    "any", "all", "*", "x-xy-xyz"
+//	none:   "", "none", "no", "0", "n"
 func ParseFormat(s string) Format {
-	s = toTok(s)
-	if s == "" {
-		return FormatXYZ
-	}
+	s = toToken(s)
+
 	// quick path for any/all
 	switch s {
+	case "", "none", "no", "0", "n":
+		return FormatNone
+
 	case "any", "all", "*", "a":
 		return FormatAll
 	}
@@ -239,7 +276,7 @@ func (m SortMode) String() string {
 //	desc: "desc","descending","dec","decrease","down"
 //	none: "none","default","asis"
 func ParseSort(s string) SortMode {
-	switch toTok(s) {
+	switch toToken(s) {
 	// ascending (low -> high)
 	case "asc", "ascending", "inc", "increase", "up":
 		return SortAsc
@@ -262,7 +299,7 @@ func ParseSort(s string) SortMode {
 type VPrefix uint8
 
 const (
-	// PrefixAny accepts both forms, with or without a leading 'v'
+	// PrefixAny accepts both format, with or without a leading 'v'
 	// (e.g., "1.2.3" and "v1.2.3").
 	PrefixAny VPrefix = iota
 
@@ -294,7 +331,7 @@ func (m VPrefix) String() string {
 //	v:    "v", "with-v", "require-v", "required":
 //	none: "none", "no-v", "without-v", "forbidden":
 func ParseVPrefix(s string) VPrefix {
-	switch toTok(s) {
+	switch toToken(s) {
 	case "", "any", "*", "auto":
 		return PrefixAny
 	case "v", "with-v", "require-v", "required":
@@ -321,6 +358,7 @@ type Range struct {
 	IncludePrerelease bool
 }
 
+// Enabled if min or max bounds exists
 func (r Range) Enabled() bool {
 	return r.Min != "" || r.Max != ""
 }

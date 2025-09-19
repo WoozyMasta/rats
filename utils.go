@@ -4,8 +4,8 @@ import (
 	"strings"
 )
 
-// toTok normalizes a free-form string into a lowercased token.
-func toTok(s string) string {
+// toToken normalizes a free-form string into a lowercased token.
+func toToken(s string) string {
 	return strings.ToLower(strings.TrimSpace(s))
 }
 
@@ -63,15 +63,6 @@ func joinDash(parts []string) string {
 	}
 }
 
-// capStrings returns out[:min(limit, len(out))] if limit>0; otherwise out.
-func capStrings(out []string, limit int) []string {
-	if limit > 0 && limit < len(out) {
-		return out[:limit]
-	}
-
-	return out
-}
-
 // isSigTag reports whether s matches "sha256-<64 anycase hex>.sig".
 func isSigTag(s string) bool {
 	// "sha256-" (7) + 64 hex + ".sig" (4) = 75
@@ -90,4 +81,13 @@ func isSigTag(s string) bool {
 	}
 
 	return true
+}
+
+// capStrings returns out[:min(limit, len(out))] if limit>0; otherwise out.
+func capStrings(out []string, limit int) []string {
+	if limit > 0 && limit < len(out) {
+		return out[:limit]
+	}
+
+	return out
 }

@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+echo "pre-commit: make validate"
+if ! make validate; then
+  >&2 echo "pre-commit: validation failed"
+  exit 1
+fi
+
+git ls-files --modified --others --exclude-standard \
+| grep -qP '^(cmd/rats/)?go\.(mod|sum)$' && {
+  echo "pre-commit: adding updated go.mod/go.sum"
+  git ls-files --modified --others --exclude-standard \
+  | grep -P '^(cmd/rats/)?go\.(mod|sum)$' | xargs -r git add
+}

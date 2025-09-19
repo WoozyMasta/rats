@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+git rev-parse -q --verify MERGE_HEAD >/dev/null && exit 0
+[ "${BENCH_SKIP:-}" == "1" ] && exit 0
+
+echo "post-commit: make bench-log"
+make bench-log || :

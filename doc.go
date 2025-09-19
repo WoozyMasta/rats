@@ -31,9 +31,9 @@ Usage example:
 
 	res := rats.Select(raw, rats.Options{
 		// FilterSemver is implied by ReleaseOnly; setting true is explicit but optional here.
-		FilterSemver:      true,            // (optional here) enable SemVer gating
+		FilterSemver:      true,            // enable SemVer gating
 		ReleaseOnly:       true,            // only releases; allow X / X.Y / X.Y.Z
-		OutputCanonical:   true,            // output in canonical format vX.Y.Z
+		OutputCanonical:   true,            // output in canonical format vX.Y.Z-rc
 		ExcludeSignatures: true,            // drop sha256-<64 hex>.sig tags early
 		Include:           nil,             // positive regexp match
 		Exclude:           exclude,         // negative regexp match
