@@ -170,7 +170,7 @@ const (
 	FormatXY
 	// FormatX allows X.
 	FormatX
-	// FormAll enables all format (X, X.Y, X.Y.Z).
+	// FormatAll enables all format (X, X.Y, X.Y.Z).
 	FormatAll = FormatXYZ | FormatXY | FormatX
 )
 

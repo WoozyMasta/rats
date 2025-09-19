@@ -169,7 +169,7 @@ tag-cli:
 # Tool installer
 tools:
 	@echo ">> installing golangci-lint"
-	$(GO) install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+	$(GO) install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest
 	@echo ">> installing betteralign"
 	$(GO) install github.com/dkorunic/betteralign/cmd/betteralign@latest
 	@echo ">> installing benchstat"
