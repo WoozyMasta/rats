@@ -19,6 +19,10 @@ runs:
       with:
         go-version: ${{ inputs.go-version }}
 
+    - name: install tools
+      shell: bash
+      run: make tools
+
     - name: check and test
       shell: bash
       run: make validate-clean
