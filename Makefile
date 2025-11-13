@@ -61,6 +61,18 @@ test:
 	$(GO) test ./...
 	CGO_ENABLED=$(CGO_ENABLED) $(GO) build $(GOFLAGS) -ldflags '$(LDFLAGS)' $(CMD_DIR)/
 
+download:
+	$(GO) mod download
+
+fmt:
+	$(GO) fmt ./...
+
+verify:
+	$(GO) mod verify
+
+vet:
+	$(GO) vet ./...
+
 # Lint
 lint:
 	$(LINTER) run ./...
@@ -76,7 +88,14 @@ tidy:
 		$(GO) mod tidy; \
 
 # Validate before commit
-validate: tidy test lint align
+validate: download tidy fmt verify vet test lint align
+	@echo "OK"
+
+validate-clean: download tidy fmt verify vet test lint align
+	@git diff --quiet --exit-code || { \
+		echo "working tree is dirty after validate"; \
+		exit 1; \
+	}
 	@echo "OK"
 
 # Bench log
@@ -181,7 +200,7 @@ hooks-disable:
 	@echo "hooks disabled (core.hooksPath unset)"
 
 .PHONY: \
-	all build install test lint align tidy validate \
+	all build install test fmt verify vet lint align tidy validate validate-clean \
 	bench-log bench-diff bench \
 	build-matrix sbom-dist checksums release \
 	clean clean-dist \

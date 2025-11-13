@@ -19,13 +19,6 @@ runs:
       with:
         go-version: ${{ inputs.go-version }}
 
-    - name: golangci-lint
-      uses: golangci/golangci-lint-action@v8
-      with:
-        version: v2.4.0
-
-    # for windows can use betteralign ./...
-    - name: Check Golang structures
-      uses: essentialkaos/aligo-action@v2
-      with:
-        files: ./...
+    - name: check and test
+      shell: bash
+      run: make validate-clean
