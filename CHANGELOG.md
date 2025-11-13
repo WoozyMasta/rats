@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://rats.org/spec/v2.0.0.h
 
 * all CLI flags disabled by default
 
+[0.3.1]: <https://github.com/WoozyMasta/rats/compare/v0.3.0...v0.3.1>
+
 ## [0.3.0] - 2025-11-13
 
 ### Changed
@@ -23,11 +25,15 @@ and this project adheres to [Semantic Versioning](https://rats.org/spec/v2.0.0.h
 * flag `--deduplicate` disabled by default
 * removed `go.work` and made cmd part of single project
 
+[0.3.0]: <https://github.com/WoozyMasta/rats/compare/v0.2.0...v0.3.0>
+
 ## [0.2.0] - 2025-09-19
 
 ### Added
 
 * Redesigned initial release
+
+[0.2.0]: <https://github.com/WoozyMasta/rats/compare/v0.1.0...v0.2.0>
 
 ## [0.1.0] - 2025-09-16
 
@@ -35,7 +41,4 @@ and this project adheres to [Semantic Versioning](https://rats.org/spec/v2.0.0.h
 
 * Initial prototype release
 
-<!-- links -->
-
-[0.2.0]: <https://github.com/WoozyMasta/rats/compare/v0.1.0...v0.2.0>
 [0.1.0]: <https://github.com/WoozyMasta/rats/releases/tag/v0.1.0>
