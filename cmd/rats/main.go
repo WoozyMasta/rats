@@ -42,8 +42,8 @@ type OptionsOutput struct {
 }
 
 type OptionsAggregate struct {
-	FilterDepth   string `short:"D" long:"depth"    description:"Aggregation depth" choice:"none" choice:"patch" choice:"minor" choice:"major" choice:"latest" default:"minor"`
-	SortMode      string `short:"S" long:"sort"     description:"Sort output tags" choice:"none" choice:"asc" choice:"desc" default:"desc"`
+	FilterDepth   string `short:"D" long:"depth"    description:"Aggregation depth" choice:"none" choice:"patch" choice:"minor" choice:"major" choice:"latest" default:"none"`
+	SortMode      string `short:"S" long:"sort"     description:"Sort output tags" choice:"none" choice:"asc" choice:"desc" default:"none"`
 	ReleaseFormat string `short:"f" long:"format"   description:"Allowed release forms" choice:"x" choice:"xy" choice:"xyz" choice:"x-xy" choice:"x-xyz" choice:"xy-xyz" choice:"any" choice:"none" default:"none"`
 	Limit         int    `short:"n" long:"limit"    description:"Max number of output tags (<=0 = unlimited)" default:"0"`
 }
