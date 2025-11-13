@@ -13,8 +13,7 @@ LDFLAGS     ?= -s -w
 GOFTAGS     ?= forceposix
 
 PKG         := github.com/woozymasta/rats
-CMD_DIR     := cmd/$(BINARY)
-MODULES     := . $(CMD_DIR)
+CMD_DIR     := ./cmd/$(BINARY)
 
 # Host env
 GOOS        ?= $(shell $(GO) env GOOS)
@@ -42,11 +41,9 @@ all: build
 
 # Local build for host platform (CLI) + SBOM
 build:
-	cd $(CMD_DIR) && \
-	  CGO_ENABLED=$(CGO_ENABLED) GOOS=$(GOOS) GOARCH=$(GOARCH) \
+	CGO_ENABLED=$(CGO_ENABLED) GOOS=$(GOOS) GOARCH=$(GOARCH) \
 	  $(GO) build $(GOFLAGS) -ldflags '$(LDFLAGS)' \
-			-tags '$(GOFTAGS)' -o ../../bin/$(BINARY)$(SUFFIX)
-	@# SBOM next to the local binary
+			-tags '$(GOFTAGS)' -o bin/$(BINARY)$(SUFFIX) $(CMD_DIR)/
 	@if command -v $(SBOM) >/dev/null 2>&1; then \
 	  echo ">> SBOM bin/$(BINARY)$(SUFFIX)"; \
 	  $(SBOM) bin -json -output bin/$(BINARY)$(SUFFIX).sbom.json bin/$(BINARY)$(SUFFIX) \
@@ -62,7 +59,7 @@ install:
 # Tests (lib) + ensure CLI compiles
 test:
 	$(GO) test ./...
-	cd $(CMD_DIR) && CGO_ENABLED=$(CGO_ENABLED) $(GO) build $(GOFLAGS) -ldflags '$(LDFLAGS)' ./...
+	CGO_ENABLED=$(CGO_ENABLED) $(GO) build $(GOFLAGS) -ldflags '$(LDFLAGS)' $(CMD_DIR)/
 
 # Lint
 lint:
@@ -75,10 +72,8 @@ align:
 # go mod tidy in both modules
 tidy:
 	@set -e; \
-	for m in $(MODULES); do \
-		echo ">> go mod tidy in $$m"; \
-		(cd $$m && $(GO) mod tidy); \
-	done
+		echo ">> go mod tidy"; \
+		$(GO) mod tidy; \
 
 # Validate before commit
 validate: tidy test lint align
@@ -115,10 +110,9 @@ build-matrix:
 	    ext=""; [ "$$os" = "windows" ] && ext=".exe"; \
 	    out="$(DIST)/$(BINARY)-$${os}-$${arch}$${ext}"; \
 	    echo ">> building $${out}"; \
-	    (cd $(CMD_DIR) && \
-	      CGO_ENABLED=$(CGO_ENABLED) GOOS=$${os} GOARCH=$${arch} \
+	    CGO_ENABLED=$(CGO_ENABLED) GOOS=$${os} GOARCH=$${arch} \
 	      $(GO) build $(GOFLAGS) -ldflags '$(LDFLAGS)' -tags '$(GOFTAGS)' \
-					-o "../../$${out}"); \
+					-o "$${out}" $(CMD_DIR)/; \
 	  done; \
 	done
 
@@ -156,15 +150,10 @@ clean-dist:
 	rm -rf $(DIST)/
 
 # Release helpers
-tag-lib:
+tag:
 	@test -n "$(VERSION)" || VERSION="$(word 2,$(MAKECMDGOALS))"; \
 	[ -n "$$VERSION" ] || { echo "VERSION is required"; exit 2; }; \
 	git tag v$$VERSION && git push origin v$$VERSION
-
-tag-cli:
-	@test -n "$(VERSION)" || VERSION="$(word 2,$(MAKECMDGOALS))"; \
-	[ -n "$$VERSION" ] || { echo "VERSION is required"; exit 2; }; \
-	git tag cmd/$(BINARY)/v$$VERSION && git push origin cmd/$(BINARY)/v$$VERSION
 
 %:
 	@:

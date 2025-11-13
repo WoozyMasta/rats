@@ -8,9 +8,9 @@ if ! make validate; then
 fi
 
 if git ls-files --modified --others --exclude-standard \
-  | grep -qP '^(cmd/rats/)?go\.(mod|sum)$'
+  | grep -qP 'go\.(mod|sum)$'
 then
   echo "pre-commit: adding updated go.mod/go.sum"
   git ls-files --modified --others --exclude-standard \
-  | grep -P '^(cmd/rats/)?go\.(mod|sum)$' | xargs -r git add
+  | grep -P 'go\.(mod|sum)$' | xargs -r git add
 fi

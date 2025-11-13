@@ -3,7 +3,7 @@ package rats
 import (
 	"sort"
 
-	semver "github.com/woozymasta/semver"
+	"github.com/woozymasta/semver"
 )
 
 // rec is an internal record carrying raw tag, input index, and parsed semver (if valid).
