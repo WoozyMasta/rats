@@ -3,7 +3,6 @@ package rats
 // DefaultOptions returns a practical preset for stable releases:
 //
 //   - FilterSemver: true          // only SemVer-like tags
-//   - ReleaseOnly:  true          // no prerelease/build
 //   - Format:       FormatAll     // allow X, X.Y, X.Y.Z
 //   - Depth:        DepthMinor    // latest per (major, minor)
 //   - Sort:         SortDesc      // newest first
@@ -14,7 +13,6 @@ package rats
 func DefaultOptions() Options {
 	return Options{
 		FilterSemver: true,
-		ReleaseOnly:  true,
 		Format:       FormatAll,
 		Depth:        DepthMinor,
 		Sort:         SortDesc,
@@ -27,7 +25,7 @@ func DefaultOptions() Options {
 //  1. cheap raw prefilter (VPrefix/regex/signatures)
 //  2. parse all (once)
 //  3. if no semver at all -> string-only path (lex sort, limit)
-//  4. else -> semver path (ReleaseOnly/Format -> Range -> Dedup -> Depth -> Sort)
+//  4. else -> semver path (Format -> Range -> Dedup -> Depth -> Sort)
 //     non-semver are kept only when not gating by semver, and appended after semver.
 func Select(in []string, opt Options) []string {
 	opt = opt.normalized()
@@ -43,6 +41,10 @@ func Select(in []string, opt Options) []string {
 
 	// 3) if there are no semver at all -> string-only pipeline
 	if semCount == 0 {
+		if opt.FilterSemver {
+			return nil
+		}
+
 		out := stringOnlyPipeline(raw, opt)
 		return capStrings(out, opt.Limit)
 	}
@@ -51,7 +53,7 @@ func Select(in []string, opt Options) []string {
 	sem, other := splitSemver(rs)
 
 	// SemVer gating: ReleaseOnly / FilterSemver
-	if opt.ReleaseOnly {
+	if opt.Format != FormatNone {
 		sem = filterReleaseOnly(sem, opt.Format)
 		// non-semver are dropped in ReleaseOnly mode
 		other = nil
@@ -128,7 +130,7 @@ func Releases(in []string) []string {
 	return Select(in, DefaultOptions())
 }
 
-// Latest returns a single latest stable release (ReleaseOnly).
+// Latest returns a single latest stable release.
 // DepthLatest + SortDesc + Deduplicate=true.
 func Latest(in []string) []string {
 	opt := DefaultOptions()

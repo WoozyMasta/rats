@@ -237,3 +237,48 @@ func TestSortSemver(t *testing.T) {
 	}
 	eqStrings(t, out, []string{"2.0.0", "1.10.0", "1.0.0", "1.0.0-rc.1"})
 }
+
+// * strictSemver
+
+func TestStrictSemver(t *testing.T) {
+	// Best per (major,minor)
+	tags := []string{
+		"one", "1.2.3", "two", "0.1.2", "some",
+	}
+	opt := Options{
+		FilterSemver: true,
+	}
+	got := Select(tags, opt)
+	// drops: valid signature, "-win", everything else stays
+	want := []string{"1.2.3", "0.1.2"}
+	eqStrings(t, got, want)
+}
+
+func TestNonStrictSemver(t *testing.T) {
+	// Best per (major,minor)
+	tags := []string{
+		"one", "1.2.3", "two", "0.1.2", "some",
+	}
+	opt := Options{
+		FilterSemver: false,
+		Sort:         SortAsc,
+	}
+	got := Select(tags, opt)
+	// drops: valid signature, "-win", everything else stays
+	want := []string{"0.1.2", "1.2.3", "one", "some", "two"}
+	eqStrings(t, got, want)
+}
+
+func TestNoAnySemver(t *testing.T) {
+	// Best per (major,minor)
+	tags := []string{
+		"one", "two", "some",
+	}
+	opt := Options{
+		FilterSemver: false,
+	}
+	got := Select(tags, opt)
+	// drops: valid signature, "-win", everything else stays
+	want := []string{"one", "two", "some"}
+	eqStrings(t, got, want)
+}

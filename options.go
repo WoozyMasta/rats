@@ -20,13 +20,7 @@ type Options struct {
 	Depth Depth
 
 	// FilterSemver enables SemVer gating (X.Y.Z[...]).
-	// If false and ReleaseOnly is false, only signature filtering is applied.
 	FilterSemver bool
-
-	// ReleaseOnly keeps only release versions (no -prerelease / +build).
-	// In this mode, shorthand tags X / X.Y are accepted and normalized
-	// to X.0.0 / X.Y.0 for comparison.
-	ReleaseOnly bool
 
 	// Deduplicate merges aliases of the same semantic version
 	// (MAJOR.MINOR.PATCH + PRERELEASE; build is ignored) after parsing
@@ -44,8 +38,8 @@ type Options struct {
 	// ExcludeSignatures drops signature-like tags: sha256-<64 hex>.sig
 	ExcludeSignatures bool
 
-	// Format restricts allowed release format in ReleaseOnly mode (X/XY/XYZ).
-	// Ignored if ReleaseOnly=false. Default is FormatXYZ.
+	// Format restricts allowed release format in mode (X/XY/XYZ).
+	// Default is FormatNone.
 	Format Format
 
 	// Sort defines final output ordering (none/asc/desc).
@@ -61,28 +55,13 @@ type Options struct {
 func (o Options) normalized() Options {
 	out := o
 
-	// any depth filtering require
-	if out.Depth != DepthAny {
-		out.FilterSemver = true
-
-		// out.ReleaseOnly = true // TODO
-
-		// When ReleaseOnly is active and format not set, default XYZ.
-		if out.Format == 0 {
-			out.Format = FormatXYZ
-		}
-
-		return out
+	if o.Format == 0 {
+		out.Format = FormatNone
 	}
 
-	// ReleaseOnly implies SemVer gating.
-	if (out.ReleaseOnly || out.OutputCanonical) && !out.FilterSemver {
+	// implies SemVer gating.
+	if (o.Format != FormatNone || o.OutputCanonical) && !o.FilterSemver {
 		out.FilterSemver = true
-	}
-
-	// In ReleaseOnly, zero Format defaults to FormatXYZ.
-	if out.ReleaseOnly && out.Format == 0 {
-		out.Format = FormatXYZ
 	}
 
 	return out
@@ -95,10 +74,10 @@ const (
 	// DepthAny disables semantic aggregation. It is a "raw" depth:
 	// Select will not enforce SemVer gating via normalization.
 	// Use this when you want plain filtering/sorting without SemVer grouping.
-	DepthAny Depth = iota
+	DepthAny Depth = 0
 	// DepthPatch keeps all X.Y.Z* entries (no grouping),
 	// but works inside the SemVer pipeline (gating may be enabled).
-	DepthPatch
+	DepthPatch = 1 << iota
 	// DepthMinor keeps the latest per (major, minor).
 	DepthMinor
 	// DepthMajor keeps the latest per major.
@@ -162,10 +141,10 @@ func ParseDepth(s string) Depth {
 type Format uint8
 
 const (
-	// FormatNone disable formatter
-	FormatNone Format = 1 << iota
+	// FormatNone format not set
+	FormatNone Format = 0
 	// FormatXYZ allows X.Y.Z.
-	FormatXYZ
+	FormatXYZ Format = 1 << iota
 	// FormatXY allows X.Y.
 	FormatXY
 	// FormatX allows X.
@@ -250,9 +229,9 @@ type SortMode uint8
 
 const (
 	// SortNone preserves the existing order.
-	SortNone SortMode = iota
+	SortNone SortMode = 0
 	// SortAsc sorts ascending by SemVer (fallback to lexicographic).
-	SortAsc
+	SortAsc = 1 << iota
 	// SortDesc sorts descending by SemVer (fallback to lexicographic).
 	SortDesc
 )
@@ -301,11 +280,11 @@ type VPrefix uint8
 const (
 	// PrefixAny accepts both format, with or without a leading 'v'
 	// (e.g., "1.2.3" and "v1.2.3").
-	PrefixAny VPrefix = iota
+	PrefixAny VPrefix = 0
 
 	// PrefixV requires a leading 'v' (e.g., "v1.2.3"); tags without 'v'
 	// are rejected before SemVer parsing.
-	PrefixV
+	PrefixV = 1 << iota
 
 	// PrefixNone forbids a leading 'v' (e.g., "1.2.3"); tags starting with 'v'
 	// are rejected before SemVer parsing.

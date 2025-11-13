@@ -129,7 +129,7 @@ func TestFormatString(t *testing.T) {
 		{FormatXY | FormatXYZ, "xy-xyz"},
 		{FormatX | FormatXYZ, "x-xyz"},
 		{FormatAll, "x-xy-xyz"},
-		{0, "xyz"}, // zero-mask -> default to "xyz"
+		{0, "none"}, // zero-mask -> default to "xyz"
 	}
 
 	for _, tc := range cases {

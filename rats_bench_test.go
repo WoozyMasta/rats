@@ -111,10 +111,10 @@ func Benchmark_Select_NoWorkFastPath(b *testing.B) {
 	// * VPrefix=any, нет regex и сигнатур
 	opt := Options{
 		FilterSemver:      false,
-		ReleaseOnly:       false,
 		Deduplicate:       false,
 		OutputCanonical:   false,
 		ExcludeSignatures: false,
+		Format:            FormatNone,
 		Depth:             DepthPatch,
 		Sort:              SortNone,
 		VPrefix:           PrefixAny,
@@ -135,7 +135,7 @@ func Benchmark_Select_SignaturesOnly(b *testing.B) {
 	tags := makeTags(tagsCount)
 	opt := Options{
 		FilterSemver:      false,
-		ReleaseOnly:       false,
+		Format:            FormatNone,
 		ExcludeSignatures: true,
 	}
 
@@ -151,7 +151,7 @@ func Benchmark_Select_OneCheapRegex(b *testing.B) {
 
 	opt := Options{
 		FilterSemver: false,
-		ReleaseOnly:  false,
+		Format:       FormatNone,
 		Include:      regexp.MustCompile(`^[A-Za-z0-9.+_-]+$`),
 	}
 
@@ -167,7 +167,7 @@ func Benchmark_Select_OneComplexRegex(b *testing.B) {
 
 	opt := Options{
 		FilterSemver: false,
-		ReleaseOnly:  false,
+		Format:       FormatNone,
 		Exclude:      regexp.MustCompile(`(([2-3]\.){1,2}[0-2]+)(?:-alpine|-windows|-win)$`),
 	}
 
@@ -183,7 +183,7 @@ func Benchmark_Select_BothRegex(b *testing.B) {
 
 	opt := Options{
 		FilterSemver: false,
-		ReleaseOnly:  false,
+		Format:       FormatNone,
 		Include:      regexp.MustCompile(`^[A-Za-z0-9.+_-]+$`),
 		Exclude:      regexp.MustCompile(`(([2-3]\.){1,2}[0-2]+)(?:-alpine|-windows|-win)$`),
 	}
@@ -202,7 +202,6 @@ func Benchmark_Select_RangeMin(b *testing.B) {
 
 	opt := Options{
 		FilterSemver: true,
-		ReleaseOnly:  true,
 		Format:       FormatAll,
 		Depth:        DepthMajor,
 		Range:        Range{Min: "1.0.5"},
@@ -220,7 +219,6 @@ func Benchmark_Select_RangeMax(b *testing.B) {
 
 	opt := Options{
 		FilterSemver: true,
-		ReleaseOnly:  true,
 		Format:       FormatAll,
 		Depth:        DepthMajor,
 		Range:        Range{Max: "10.0.5"},
@@ -238,7 +236,6 @@ func Benchmark_Select_RangeBoth(b *testing.B) {
 
 	opt := Options{
 		FilterSemver: true,
-		ReleaseOnly:  true,
 		Format:       FormatAll,
 		Depth:        DepthMajor,
 		Range:        Range{Min: "1.0.5", Max: "10.0.5"},
@@ -258,7 +255,6 @@ func Benchmark_Select_ReleaseOnly_DepthMajor(b *testing.B) {
 
 	opt := Options{
 		FilterSemver:      true,
-		ReleaseOnly:       true,
 		ExcludeSignatures: true,
 		Format:            FormatAll,
 		Depth:             DepthMajor,
@@ -276,7 +272,6 @@ func Benchmark_Select_ReleaseOnly_DepthLatest(b *testing.B) {
 
 	opt := Options{
 		FilterSemver:      true,
-		ReleaseOnly:       true,
 		ExcludeSignatures: true,
 		Format:            FormatAll,
 		Depth:             DepthLatest,

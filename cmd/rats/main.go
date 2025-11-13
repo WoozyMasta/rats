@@ -25,9 +25,8 @@ type Options struct {
 }
 
 type OptionsSemver struct {
-	FilterSemver *bool `short:"s" long:"semver"       description:"Keep only SemVer tags (X.Y.Z[-pre][+build])" default-mask:"true"`
-	ReleaseOnly  *bool `short:"r" long:"release-only" description:"Keep only releases (no -pre/+build); allow X / X.Y / X.Y.Z" default-mask:"true"`
-	Deduplicate  *bool `short:"d" long:"deduplicate"  description:"Collapse aliases of the same version (MAJOR.MINOR.PATCH+PRERELEASE)" default-mask:"true"`
+	FilterSemver bool `short:"s" long:"semver"       description:"Keep only SemVer tags (X.Y.Z[-pre][+build])" default-mask:"false"`
+	Deduplicate  bool `short:"d" long:"deduplicate"  description:"Collapse aliases of the same version (MAJOR.MINOR.PATCH+PRERELEASE)" default-mask:"false"`
 }
 
 type OptionsOutput struct {
@@ -39,7 +38,7 @@ type OptionsAggregate struct {
 	Limit         int    `short:"n" long:"limit"    description:"Max number of output tags (<=0 = unlimited)" default:"0"`
 	FilterDepth   string `short:"D" long:"depth"    description:"Aggregation depth" choice:"none" choice:"patch" choice:"minor" choice:"major" choice:"latest" default:"minor"`
 	SortMode      string `short:"S" long:"sort"     description:"Sort output tags" choice:"none" choice:"asc" choice:"desc" default:"desc"`
-	ReleaseFormat string `short:"f" long:"format"   description:"Allowed release forms (when --release-only)" choice:"none" choice:"x" choice:"xy" choice:"xyz" choice:"x-xy" choice:"x-xyz" choice:"xy-xyz" choice:"any" default:"any"`
+	ReleaseFormat string `short:"f" long:"format"   description:"Allowed release forms" choice:"x" choice:"xy" choice:"xyz" choice:"x-xy" choice:"x-xyz" choice:"xy-xyz" choice:"any" choice:"none" default:"none"`
 }
 
 type OptionsFilter struct {
@@ -113,15 +112,8 @@ supports SemVer and Go canonical (v-prefixed), can filter prereleases, drop buil
 	// Стартуем с дефолтов и переопределяем флагами
 	rOpt := rats.DefaultOptions()
 
-	if opt.OptionsSemver.FilterSemver != nil {
-		rOpt.FilterSemver = *opt.OptionsSemver.FilterSemver
-	}
-	if opt.OptionsSemver.ReleaseOnly != nil {
-		rOpt.ReleaseOnly = *opt.OptionsSemver.ReleaseOnly
-	}
-	if opt.OptionsSemver.Deduplicate != nil {
-		rOpt.Deduplicate = *opt.OptionsSemver.Deduplicate
-	}
+	rOpt.FilterSemver = opt.OptionsSemver.FilterSemver
+	rOpt.Deduplicate = opt.OptionsSemver.Deduplicate
 
 	rOpt.ExcludeSignatures = opt.OptionsFilter.ExcludeSigs
 	rOpt.VPrefix = rats.ParseVPrefix(opt.OptionsFilter.VPrefixMode)

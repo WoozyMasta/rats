@@ -6,6 +6,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://rats.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2025-11-13
+
+### Changed
+
+* fixed strict semver filter if all input data not semver
+* **Removed** `Options.ReleaseOnly` and flag `--release-only`,
+  now use only ``Options.Format` or flag `--format` instead
+* flag `--semver` disabled by default
+* flag `--deduplicate` disabled by default
+
 ## [0.2.0] - 2025-09-19
 
 ### Added
