@@ -17,21 +17,23 @@ import (
 )
 
 type Options struct {
+	// betteralign:ignore
+
+	// SemVer & release behavior
+	OptionsSemver OptionsSemver `group:"SemVer and releases"`
 	// Aggregation and sorting
 	OptionsAggregate OptionsAggregate `group:"Aggregation and sort"`
 	// Input filters
 	OptionsFilter OptionsFilter `group:"Input filters"`
 	// Range clipping
 	OptionsRange OptionsRange `group:"Range"`
-	// SemVer & release behavior
-	OptionsSemver OptionsSemver `group:"SemVer and releases"`
 	// Output format
 	OptionsOutput OptionsOutput `group:"Output"`
 }
 
 type OptionsSemver struct {
-	FilterSemver bool `short:"s" long:"semver"       description:"Keep only SemVer tags (X.Y.Z[-pre][+build])" default-mask:"false"`
-	Deduplicate  bool `short:"d" long:"deduplicate"  description:"Collapse aliases of the same version (MAJOR.MINOR.PATCH+PRERELEASE)" default-mask:"false"`
+	FilterSemver bool `short:"s" long:"semver"       description:"Keep only SemVer tags (X.Y.Z[-pre][+build])"`
+	Deduplicate  bool `short:"d" long:"deduplicate"  description:"Collapse aliases of the same version (MAJOR.MINOR.PATCH+PRERELEASE)"`
 }
 
 type OptionsOutput struct {
