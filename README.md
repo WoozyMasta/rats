@@ -10,8 +10,6 @@ Input is just a `[]string` of tags; output is a filtered and sorted list.
 ## Key features
 
 * **SemVer gating** – optionally allow only valid `X.Y.Z[-pre][+build]`.
-* **ReleaseOnly mode** – excludes prerelease/build; accepts shorthands `X` /
-  `X.Y` (compares as `X.0.0` / `X.Y.0`).
 * **VPrefix policy** – require, forbid, or allow the leading `v` (`PrefixV`
   / `PrefixNone` / `PrefixAny`).
 * **Release forms mask** – permit exactly `X`, `X.Y`, `X.Y.Z`, or any combo
@@ -73,29 +71,17 @@ Usage:
 
 RATS — Release App Tag Selector.
 A CLI tool for selecting versions from tag lists:
-supports SemVer and Go canonical (v-prefixed), can filter prereleases, drop build metadata, sort and
-aggregate results.
+supports SemVer and Go canonical (v-prefixed), can filter prereleases, drop build metadata, sort and aggregate results.
 
 SemVer and releases:
   -s, --semver                                       Keep only SemVer tags (X.Y.Z[-pre][+build])
-                                                     (default: true)
-  -r, --release-only                                 Keep only releases (no -pre/+build);
-                                                     allow X / X.Y / X.Y.Z (default: true)
-  -d, --deduplicate                                  Collapse aliases of the same version
-                                                     (MAJOR.MINOR.PATCH+PRERELEASE) (default: true)
-
-Output:
-  -c, --canonical-out                                Print canonical vMAJOR.MINOR.PATCH[-PRERELEASE]
-                                                     (drop +BUILD)
-  -v, --semver-out                                   Print SemVer MAJOR.MINOR.PATCH[-PRERELEASE][+BUILD]
+  -d, --deduplicate                                  Collapse aliases of the same version (MAJOR.MINOR.PATCH+PRERELEASE)
 
 Aggregation and sort:
-  -n, --limit=                                       Max number of output tags (<=0 = unlimited)
-                                                     (default: 0)
-  -D, --depth=[none|patch|minor|major|latest]        Aggregation depth (default: minor)
-  -S, --sort=[none|asc|desc]                         Sort output tags (default: desc)
-  -f, --format=[none|x|xy|xyz|x-xy|x-xyz|xy-xyz|any] Allowed release forms (when --release-only)
-                                                     (default: any)
+  -D, --depth=[none|patch|minor|major|latest]        Aggregation depth (default: none)
+  -S, --sort=[none|asc|desc]                         Sort output tags (default: none)
+  -f, --format=[x|xy|xyz|x-xy|x-xyz|xy-xyz|any|none] Allowed release forms (default: none)
+  -n, --limit=                                       Max number of output tags (<=0 = unlimited) (default: 0)
 
 Input filters:
   -V, --v-prefix=[any|v|none]                        Policy for leading 'v' in tags (default: any)
@@ -108,19 +94,20 @@ Range:
   -x, --max=                                         Upper bound (X / X.Y / X.Y.Z or full SemVer)
   -M, --min-exclusive                                Exclude lower bound itself
   -X, --max-exclusive                                Exclude upper bound itself
-  -p, --include-prerelease                           When min is shorthand, include prereleases at the
-                                                     floor (>= X.Y.0-0)
+  -p, --include-prerelease                           When min is shorthand, include prereleases at the floor (>= X.Y.0-0)
+
+Output:
+  -c, --canonical-out                                Print canonical vMAJOR.MINOR.PATCH[-PRERELEASE] (drop +BUILD)
+  -v, --semver-out                                   Print SemVer MAJOR.MINOR.PATCH[-PRERELEASE][+BUILD]
 
 Help Options:
   -h, --help                                         Show this help message
 ```
 
-The utility accepts `true|false` or `1|0` for boolean flags and allows you
-to disable them.  
-For example, you can disable all processing.
+Usage example:
 
-```shell
-some-tool-print-tags | rats -r=0 -s=0 -d=0 -c=0 -v=0 -D=none -S=none -f=none -V=any -E=0
+```bash
+rats < testdata/big.txt -sd -D=minor -Sdesc -v -m1 -x3 -X -f xyz
 ```
 
 ## Example
